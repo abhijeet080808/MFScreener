@@ -7,8 +7,6 @@ import os.path
 import re
 import requests
 
-from copy import deepcopy
-
 # http://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx?frmdt=01-Jan-2008&todt=31-Jan-2008
 url = "http://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx?"
 
