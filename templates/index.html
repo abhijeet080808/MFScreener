@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MF</title>
     <link rel="stylesheet" href="/static/jquery-ui.css">
+    <style>
+      .ui-autocomplete {
+      max-height: 20em;
+      overflow-y: auto;
+      /* prevent horizontal scrollbar */
+      overflow-x: hidden;
+      }
+    </style>
     <script src="/static/jquery.js"></script>
     <script src="/static/jquery-ui.js"></script>
     <script>
@@ -38,6 +46,8 @@
         var availableTags = [ {{ mf_codes|join(',\n')|safe }} ];
         $("#inputNavSearch").autocomplete({
           source: availableTags,
+          delay: 300,
+          minLength: 4,
           select: function(event, ui) {
             navAutocompleteCb(ui);
             return true;
