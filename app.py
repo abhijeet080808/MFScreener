@@ -23,7 +23,7 @@ def get_mf_name_codes():
     mf_name_codes = []
 
     file_name = os.path.join("static/csv", "mf_code_names.csv")
-    with open(file_name) as f:
+    with open(file_name, "r") as f:
         csv_reader = csv.reader(f, delimiter=',')
         for row in csv_reader:
             mf_name_codes.append(\

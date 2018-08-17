@@ -42,7 +42,7 @@ def download_raw_nav(overwrite=False,
 
         if not os.path.isfile(file_name) or overwrite:
             r = requests.get(file_url, stream = True)
-            open(file_name, "wb").write(r.content)
+            open(file_name, "w").write(r.content)
             print "Downloaded " + file_name
         else:
             print "Skipped downloading " + file_name
@@ -162,7 +162,7 @@ def write_mf_nav_to_csv(mutual_funds, directory="static/csv"):
 
     for mf in mutual_funds.values():
         file_name = os.path.join(directory, str(mf.code) + ".csv")
-        with open(file_name, "wb") as f:
+        with open(file_name, "w") as f:
             writer = csv.writer(f)
             for nav_date in sorted(mf.navs.keys()):
                 writer.writerow([nav_date, mf.navs[nav_date]])
@@ -176,7 +176,7 @@ def write_mf_lookup_to_csv(mutual_funds, directory="static/csv"):
         os.makedirs(directory)
 
     file_name = os.path.join(directory, "mf_code_names.csv")
-    with open(file_name, "wb") as f:
+    with open(file_name, "w") as f:
         writer = csv.writer(f)
         for mf_code in sorted(mutual_funds.keys()):
             mf_names = list(mutual_funds[mf_code].names)

@@ -47,7 +47,7 @@
         $("#inputNavSearch").autocomplete({
           source: availableTags,
           delay: 300,
-          minLength: 4,
+          minLength: 3,
           select: function(event, ui) {
             navAutocompleteCb(ui);
             return true;
