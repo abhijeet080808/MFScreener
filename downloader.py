@@ -74,7 +74,7 @@ def read_all_mf(start_date=get_first_day(),
                         print "Code: " + str(e)
                         print matches.group(0)
                         continue
-                    name = matches.group(2)
+                    name = matches.group(2).replace("\"", "").replace("'", "")
                     # silently drop
                     if matches.group(3) == "NA" or \
                        matches.group(3) == "N.A." or \
@@ -187,10 +187,10 @@ def write_mf_lookup_to_csv(mutual_funds, directory="static/csv"):
 
 
 def main():
-    download_raw_nav(True)
+    download_raw_nav()
     mutual_funds = read_all_mf()
     mutual_funds = fill_missing_navs(mutual_funds)
-    write_mf_nav_to_csv(mutual_funds)
+    #write_mf_nav_to_csv(mutual_funds)
     write_mf_lookup_to_csv(mutual_funds)
 
 if __name__== "__main__":

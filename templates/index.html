@@ -25,7 +25,7 @@
 
       function navAutocompleteCb(ui) {
         var btn = document.createElement("button");
-        var txt = document.createTextNode(ui.item.label);
+        var txt = document.createTextNode(ui.item.mfcode + " - " + ui.item.label);
         btn.appendChild(txt);
         btn.setAttribute("id", "btn" + ui.item.label);
         btn.setAttribute("class", "ui-button ui-widget ui-corner-all");
@@ -35,31 +35,11 @@
       }
 
       $(function() {
-        //var availableTags = {/{ navs|tojson|safe }/};
-        var availableTags = [
-          "ActionScript",
-          "AppleScript",
-          "Asp",
-          "BASIC",
-          "C",
-          "C++",
-          "Clojure",
-          "COBOL",
-          "ColdFusion",
-          "Erlang",
-          "Fortran",
-          "Groovy",
-          "Haskell",
-          "Java",
-          "JavaScript",
-          "Lisp",
-          "Perl",
-          "PHP",
-          "Python",
-          "Ruby",
-          "Scala",
-          "Scheme"
-        ];
+        var availableTags = [ {{ mf_codes|join(',\n')|safe }} ];
+        //var availableTags = [
+        //  {label: "ActionScript", mfcode: "1001"},
+        //  {label: "AppleScript", mfcode: "1002"},
+        //];
         $("#inputNavSearch").autocomplete({
           source: availableTags,
           select: function(event, ui) {
