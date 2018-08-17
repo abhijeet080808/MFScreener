@@ -8,9 +8,17 @@ import re
 import requests
 
 
+def get_first_day():
+  # AMFI India does not have data before this date
+  return datetime.date(2006, 4, 1)
+
+
+def get_last_month_last_day():
+  return datetime.date.today().replace(day=1) - datetime.timedelta(days=1)
+
 def download_raw_nav(overwrite=False,
-                     start_date=datetime.date(2006, 4, 1),
-                     end_date=(datetime.date.today().replace(day=1) - datetime.timedelta(days=1)),
+                     start_date=get_first_day(),
+                     end_date=get_last_month_last_day(),
                      directory="nav"):
 
     # http://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx?frmdt=01-Jan-2008&todt=31-Jan-2008
@@ -23,10 +31,12 @@ def download_raw_nav(overwrite=False,
     while curr_date <= end_date:
         start = curr_date
         # increment to next month
-        curr_date = datetime.date(curr_date.year + (curr_date.month / 12), ((curr_date.month % 12) + 1), 1)
+        curr_date = datetime.date(curr_date.year + (curr_date.month / 12),
+                                  ((curr_date.month % 12) + 1), 1)
         end = curr_date - datetime.timedelta(days=1)
 
-        file_url = url + "frmdt=" + start.strftime("%d-%b-%Y") + "&todt=" + end.strftime("%d-%b-%Y")
+        file_url = url + "frmdt=" + start.strftime("%d-%b-%Y") + \
+                         "&todt=" + end.strftime("%d-%b-%Y")
         file_name = os.path.join(directory,
                                  "Nav-" + start.strftime("%Y-%m") + ".txt")
 
@@ -38,8 +48,8 @@ def download_raw_nav(overwrite=False,
             print "Skipped downloading " + file_name
 
 
-def read_all_mf(start_date=datetime.date(2006, 4, 1),
-                end_date=(datetime.date.today().replace(day=1) - datetime.timedelta(days=1)),
+def read_all_mf(start_date=get_first_day(),
+                end_date=get_last_month_last_day(),
                 directory="nav"):
 
     MONTHS = { "Jan" : 1, "Feb" : 2, "Mar" : 3, "Apr" : 4,
@@ -50,7 +60,8 @@ def read_all_mf(start_date=datetime.date(2006, 4, 1),
 
     curr_date = start_date
     while curr_date <= end_date:
-        file_name = os.path.join(directory, "Nav-" +  curr_date.strftime("%Y-%m") + ".txt")
+        file_name = os.path.join(directory, "Nav-" + \
+                    curr_date.strftime("%Y-%m") + ".txt")
 
         with open(file_name, "r") as f:
             for line in f:
@@ -102,7 +113,8 @@ def read_all_mf(start_date=datetime.date(2006, 4, 1),
                     date = datetime.date(year, month, day);
 
                     if mutual_funds.get(code) is None:
-                        mutual_funds[code] = mutualfund.MutualFund(code, set([name]), dict([(date, nav)]))
+                        mutual_funds[code] = mutualfund.MutualFund(
+                            code, set([name]), dict([(date, nav)]))
                     else:
                         mutual_funds[code].names.add(name)
                         mutual_funds[code].navs[date] = nav
@@ -111,15 +123,16 @@ def read_all_mf(start_date=datetime.date(2006, 4, 1),
 
         print "Processed " + file_name
         # increment to next month
-        curr_date = datetime.date(curr_date.year + (curr_date.month / 12), ((curr_date.month % 12) + 1), 1)
+        curr_date = datetime.date(curr_date.year + (curr_date.month / 12),
+                                  ((curr_date.month % 12) + 1), 1)
 
     print "Processed " + str(len(mutual_funds)) + " mutual funds"
     return mutual_funds
 
 
 def fill_missing_navs(mutual_funds,
-                      start_date=datetime.date(2006, 4, 1),
-                      end_date=(datetime.date.today().replace(day=1) - datetime.timedelta(days=1))):
+                      start_date=get_first_day(),
+                      end_date=get_last_month_last_day()):
 
     for mf in mutual_funds.values():
         curr_date = start_date
@@ -132,7 +145,8 @@ def fill_missing_navs(mutual_funds,
                curr_date < last_date and \
                mf.navs.get(curr_date) is None:
                    # fill gaps with previous days's value
-                   mf.navs[curr_date] = mf.navs[curr_date - datetime.timedelta(days=1)]
+                   mf.navs[curr_date] = \
+                       mf.navs[curr_date - datetime.timedelta(days=1)]
             curr_date = curr_date + datetime.timedelta(days=1)
 
         print "Cleaned " + str(mf.code)
@@ -141,7 +155,10 @@ def fill_missing_navs(mutual_funds,
     return mutual_funds
 
 
-def write_mf_nav_to_csv(mutual_funds, directory="csv"):
+def write_mf_nav_to_csv(mutual_funds, directory="static/csv"):
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
     for mf in mutual_funds.values():
         file_name = os.path.join(directory, str(mf.code) + ".csv")
@@ -153,7 +170,10 @@ def write_mf_nav_to_csv(mutual_funds, directory="csv"):
         print "Wrote " + file_name
 
 
-def write_mf_lookup_to_csv(mutual_funds, directory="csv"):
+def write_mf_lookup_to_csv(mutual_funds, directory="static/csv"):
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
     file_name = os.path.join(directory, "mf_code_names.csv")
     with open(file_name, "wb") as f:
@@ -163,11 +183,11 @@ def write_mf_lookup_to_csv(mutual_funds, directory="csv"):
             mf_names.insert(0, str(mf_code))
             writer.writerow(mf_names)
 
-    print "Wrote lookup for " + str(len(mutual_funds)) + " files"
+    print "Wrote " + file_name
 
 
 def main():
-    download_raw_nav()
+    download_raw_nav(True)
     mutual_funds = read_all_mf()
     mutual_funds = fill_missing_navs(mutual_funds)
     write_mf_nav_to_csv(mutual_funds)
