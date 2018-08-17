@@ -36,10 +36,6 @@
 
       $(function() {
         var availableTags = [ {{ mf_codes|join(',\n')|safe }} ];
-        //var availableTags = [
-        //  {label: "ActionScript", mfcode: "1001"},
-        //  {label: "AppleScript", mfcode: "1002"},
-        //];
         $("#inputNavSearch").autocomplete({
           source: availableTags,
           select: function(event, ui) {
