@@ -1,49 +1,48 @@
 function addDailyLabels() {
-  // http://www.datejs.com
-  var start_date = Date.parse("01-Apr-2006");
-  var end_date = new Date().clearTime();
-  console.log("Setting labels from " + start_date + " to " + end_date);
+  // month is 0 indexed
+  var start_date = moment({ year: 2006, month: 3, day: 1 });
+  var end_date = moment().startOf("day");
+  console.log("Setting labels from " + start_date.format() + " to " + end_date.format());
 
   var curr_date = start_date;
   // empty labels
   navConfig.data.labels = [];
 
-  while (curr_date.compareTo(end_date) <= 0) {
-    navConfig.data.labels.push(curr_date.toString("dd MMM yyyy"));
-    curr_date = curr_date.add(1).day();
+  while (curr_date.isSameOrBefore(end_date)) {
+    navConfig.data.labels.push(curr_date.format("DD MMM YYYY"));
+    curr_date = curr_date.add(1, "days");
   }
 }
 
 function addWeeklyLabels() {
-  // http://www.datejs.com
-  var start_date = Date.parse("01-Apr-2006").next().sunday();
-  var end_date = new Date().clearTime().last().sunday();
-  console.log("Setting labels from " + start_date + " to " + end_date);
+  // month is 0 indexed
+  var start_date = moment({ year: 2006, month: 3, day: 1 });
+  var end_date = moment().startOf("day").day("Sunday"); // last sunday
+  console.log("Setting labels from " + start_date.format() + " to " + end_date.format());
 
   var curr_date = start_date;
   // empty labels
   navConfig.data.labels = [];
 
-  while (curr_date.compareTo(end_date) <= 0) {
-    navConfig.data.labels.push(curr_date.toString("dd MMM yyyy"));
-    curr_date = curr_date.add(1).week();
+  while (curr_date.isSameOrBefore(end_date)) {
+    navConfig.data.labels.push(curr_date.format("DD MMM YYYY"));
+    curr_date.add(1, "weeks");
   }
 }
 
 function addMonthlyLabels() {
-  // http://www.datejs.com
-  var start_date = Date.parse("01-Apr-2006");
-  var today = new Date().clearTime();
-  var end_date = Date.parse("1 " + today.toString("MMM yyyy"));
-  console.log("Setting labels from " + start_date + " to " + end_date);
+  // month is 0 indexed
+  var start_date = moment({ year: 2006, month: 3, day: 1 });
+  var end_date = moment().startOf("day").date(1); // first day of this month
+  console.log("Setting labels from " + start_date.format() + " to " + end_date.format());
 
   var curr_date = start_date;
   // empty labels
   navConfig.data.labels = [];
 
-  while (curr_date.compareTo(end_date) <= 0) {
-    navConfig.data.labels.push(curr_date.toString("dd MMM yyyy"));
-    curr_date = curr_date.add(1).month();
+  while (curr_date.isSameOrBefore(end_date)) {
+    navConfig.data.labels.push(curr_date.format("DD MMM YYYY"));
+    curr_date.add(1, "months");
   }
 }
 
@@ -89,31 +88,21 @@ function addChart(mfCode, csvData) {
     mfCode: mfCode
   }
 
-  var navs = {};
-  for (var i = 0; i < navConfig.data.labels.length; i++) {
-    navs[navConfig.data.labels[i]] = null;
-  }
-
+  // read all csv entries to a dict
   var csvLines = csvData.split(/\r\n|\n/);
-
+  // remove last empty element
+  csvLines.splice(-1);
+  // date (YYYY-MM-DD) vs value
+  var navValues = {};
   for (var i = 0; i < csvLines.length; i++) {
     var entries = csvLines[i].split(',');
-    // each entry is date:nav
-    var date = Date.parse(entries[0]);
-    if (date !== null) {
-      var dateStr = date.toString("dd MMM yyyy");
-      if (dateStr in navs) {
-        if (navs[dateStr] == null) {
-          navs[dateStr] = entries[1];
-        } else {
-          console.log("Duplicate NAV " + dateStr + ":" + navs[dateStr]);
-        }
-      }
-    }
+    navValues[entries[0]] = entries[1];
   }
 
-  for (var key in navs) {
-    dataset.data.push(navs[key]);
+  // get values for the relevant time markers
+  for (var i = 0; i < navConfig.data.labels.length; i++) {
+    var date = moment(navConfig.data.labels[i], "DD MMM YYYY");
+    dataset.data.push(navValues[date.format("YYYY-MM-DD")]);
   }
 
   navConfig.data.datasets.push(dataset);
