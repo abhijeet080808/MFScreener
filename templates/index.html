@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<html lang="en" style="width: 100%; height: 100%; margin: 0; padding: 0">
+<html lang="en">
   <head>
+
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>MF</title>
+
+    <title>MF Screener</title>
+
+    <!--https://www.tutorialrepublic.com/twitter-bootstrap-tutorial/-->
+    <!--https://www.w3schools.com/bootstrap/default.asp-->
+    <link rel="stylesheet" href="/static/bootstrap.css">
     <link rel="stylesheet" href="/static/jquery-ui.css">
-    <style>
-      .ui-autocomplete {
-      max-height: 20em;
-      overflow-y: auto;
-      /* prevent horizontal scrollbar */
-      overflow-x: hidden;
-      }
-    </style>
+    <link rel="stylesheet" href="/static/app.css">
 
     <script src="/static/jquery.js"></script>
-    <script src="/static/Chart.min.js"></script>
+    <script src="/static/bootstrap.js"></script>
+    <script src="/static/Chart.js"></script>
     <script src="/static/date.min.js"></script>
     <script src="/static/jquery-ui.js"></script>
     <script src="/static/app.js"></script>
@@ -27,24 +27,40 @@
 
   </head>
 
-  <body style="width: 100%; height: 100%; margin: 0; padding: 0">
+  <body>
 
-    <div style="width: 100%; height: 100%; margin: 0; padding: 1em; display: table; box-sizing: border-box;">
-      <div style="width: 100%; height: 100%; margin: 0; padding: 0; display: table-row;">
+    <div class="container">
 
-        <div id="divNavList" style="width: 25%; display: table-cell; margin: 0; padding: 1em; border: 0.1em solid #AAAAAA;">
-          <h3>This is a heading</h3>
-          <p>Hello {{ name }}!</p>
-          <div>
-            <input id="inputNavSearch" style="width: 100%; box-sizing: border-box;">
-          </div>
+      <div class="page-header">
+        <h1>MF Screener</h1>
+      </div>
+
+      <ul class="nav nav-tabs">
+        <li class="active"><a href="#">Mutual Funds</a></li>
+        <li><a href="#">Portfolio</a></li>
+        <li><a href="#">Misc</a></li>
+      </ul>
+
+      <!--Row with two columns-->
+      <div class="row">
+
+        <div id="divNavList" class="col-md-3">
+          <!--Column left-->
+          <h4>Mutual Fund Selector</h4>
+          <input id="inputNavSearch" class="form-control autocomplete" placeholder="Mutual Fund">
         </div>
 
-        <div id="divNavChart" style="width: 75%; display: table-cell; margin: 0; padding: 1em; border: 0.1em solid #AAAAAA;">
+        <div id="divNavChart" class="col-md-9">
+          <!--Column right-->
 		      <canvas id="canvasNavChart" style="width: 100%"></canvas>
         </div>
 
       </div>
+
+      <footer class="text-center text-muted">
+        <p>&copy; Copyright 2018 Abhijeet Baruah</p>
+      </footer>
+
     </div>
 
   </body>

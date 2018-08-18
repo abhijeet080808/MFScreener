@@ -76,6 +76,7 @@ function dynamicColors() {
 function addChart(mfCode, csvData) {
   console.log("Adding chart " + mfCode);
 
+  // https://www.chartjs.org/docs/latest/charts/line.html
   var color = dynamicColors();
   var dataset = {
     label: mfCode,
@@ -83,6 +84,8 @@ function addChart(mfCode, csvData) {
     backgroundColor: color,
     borderColor: color,
     fill: false,
+    pointRadius: 0,
+    pointHitRadius: 5,
     mfCode: mfCode
   }
 
@@ -134,8 +137,10 @@ function addNav(mfCode, mfLabel) {
 
   btn.appendChild(txt);
   btn.setAttribute("id", "btn" + mfLabel);
-  btn.setAttribute("class", "ui-button ui-widget ui-corner-all");
-  btn.setAttribute("style", "width: 100%; margin-top: 1em; box-sizing: border-box;");
+
+  // bootstrap css
+  btn.setAttribute("class", "btn btn-default btn-block");
+  btn.setAttribute("style", "white-space: normal; margin-top: 1em;");
 
   document.getElementById("divNavList").appendChild(btn);
 
@@ -178,14 +183,17 @@ $(function() {
     minLength: 3,
     select: function(event, ui) {
       navAutocompleteCb(ui);
+      this.value = "";
+      return false;
     }
   });
 
+  // http://www.chartjs.org/samples/latest/charts/line/basic.html
   navConfig =  {
     type: 'line',
     data: {
       labels: [],
-      datasets: [],
+      datasets: []
     }
   };
 
