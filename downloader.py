@@ -31,7 +31,7 @@ def download_raw_nav(overwrite=False,
     while curr_date <= end_date:
         start = curr_date
         # increment to next month
-        curr_date = datetime.date(curr_date.year + (curr_date.month / 12),
+        curr_date = datetime.date(curr_date.year + int(curr_date.month / 12),
                                   ((curr_date.month % 12) + 1), 1)
         end = curr_date - datetime.timedelta(days=1)
 
@@ -43,9 +43,9 @@ def download_raw_nav(overwrite=False,
         if not os.path.isfile(file_name) or overwrite:
             r = requests.get(file_url, stream = True)
             open(file_name, "w").write(r.content)
-            print "Downloaded " + file_name
+            print("Downloaded " + file_name)
         else:
-            print "Skipped downloading " + file_name
+            print("Skipped downloading " + file_name)
 
 
 def read_all_mf(start_date=get_first_day(),
@@ -71,8 +71,8 @@ def read_all_mf(start_date=get_first_day(),
                     try:
                         code = int(matches.group(1))
                     except ValueError as e:
-                        print "Code: " + str(e)
-                        print matches.group(0)
+                        print("Code: " + str(e))
+                        print(matches.group(0))
                         continue
                     name = matches.group(2).replace("\"", "").replace("'", "")
                     # silently drop
@@ -89,26 +89,26 @@ def read_all_mf(start_date=get_first_day(),
                     try:
                         nav = float(matches.group(3).replace(",", ""))
                     except ValueError as e:
-                        print "Nav: " + str(e)
-                        print matches.group(0)
+                        print("Nav: " + str(e))
+                        print(matches.group(0))
                         continue
                     try:
                         year = int(matches.group(8))
                     except ValueError as e:
-                        print "Year: " + str(e)
-                        print matches.group(0)
+                        print("Year: " + str(e))
+                        print(matches.group(0))
                         continue
                     try:
                         month = int(MONTHS[matches.group(7)])
                     except ValueError as e:
-                        print "Month: " + str(e)
-                        print matches.group(0)
+                        print("Month: " + str(e))
+                        print(matches.group(0))
                         continue
                     try:
                         day = int(matches.group(6))
                     except ValueError as e:
-                        print "Day: " + str(e)
-                        print matches.group(0)
+                        print("Day: " + str(e))
+                        print(matches.group(0))
                         continue
                     date = datetime.date(year, month, day);
 
@@ -119,14 +119,14 @@ def read_all_mf(start_date=get_first_day(),
                         mutual_funds[code].names.add(name)
                         mutual_funds[code].navs[date] = nav
 
-                    #print eval(repr(mutual_funds[code]))
+                    #print(eval(repr(mutual_funds[code])))
 
-        print "Processed " + file_name
+        print("Processed " + file_name)
         # increment to next month
-        curr_date = datetime.date(curr_date.year + (curr_date.month / 12),
+        curr_date = datetime.date(curr_date.year + int(curr_date.month / 12),
                                   ((curr_date.month % 12) + 1), 1)
 
-    print "Processed " + str(len(mutual_funds)) + " mutual funds"
+    print("Processed " + str(len(mutual_funds)) + " mutual funds")
     return mutual_funds
 
 
@@ -149,9 +149,9 @@ def fill_missing_navs(mutual_funds,
                        mf.navs[curr_date - datetime.timedelta(days=1)]
             curr_date = curr_date + datetime.timedelta(days=1)
 
-        print "Cleaned " + str(mf.code)
+        print("Cleaned " + str(mf.code))
 
-    print "Cleaned up " + str(len(mutual_funds)) + " mutual funds"
+    print("Cleaned up " + str(len(mutual_funds)) + " mutual funds")
     return mutual_funds
 
 
@@ -167,7 +167,7 @@ def write_mf_nav_to_csv(mutual_funds, directory="static/csv"):
             for nav_date in sorted(mf.navs.keys()):
                 writer.writerow([nav_date, mf.navs[nav_date]])
 
-        print "Wrote " + file_name
+        print("Wrote " + file_name)
 
 
 def write_mf_lookup_to_csv(mutual_funds, directory="static/csv"):
@@ -183,14 +183,17 @@ def write_mf_lookup_to_csv(mutual_funds, directory="static/csv"):
             mf_names.insert(0, str(mf_code))
             writer.writerow(mf_names)
 
-    print "Wrote " + file_name
+    print("Wrote " + file_name)
 
 
 def main():
+    print("Start Date: " + str(get_first_day()))
+    print("End Date: " + str(get_last_month_last_day()))
+
     download_raw_nav()
     mutual_funds = read_all_mf()
     mutual_funds = fill_missing_navs(mutual_funds)
-    #write_mf_nav_to_csv(mutual_funds)
+    write_mf_nav_to_csv(mutual_funds)
     write_mf_lookup_to_csv(mutual_funds)
 
 if __name__== "__main__":
