@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # https://www.tutorialspoint.com/flask/flask_quick_guide.htm
 # http://flask.pocoo.org/docs/1.0/
