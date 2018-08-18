@@ -66,7 +66,7 @@ def read_all_mf(start_date=get_first_day(),
         with open(file_name, "r") as f:
             for line in f:
                 # Scheme Code;Scheme Name;Net Asset Value;Repurchase Price;Sale Price;Date
-                matches = re.match("^(\d+);(.+);(.+);(.+);(.+);(\d+)-(.+)-(\d+).*$", line)
+                matches = re.match("^(\d+);(.+);(.+);(.*);(.*);(\d+)-(.+)-(\d+).*$", line)
                 if (matches):
                     try:
                         code = int(matches.group(1))
