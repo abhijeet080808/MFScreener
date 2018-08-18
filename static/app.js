@@ -4,13 +4,12 @@ function addDailyLabels() {
   var end_date = moment().startOf("day");
   console.log("Setting labels from " + start_date.format() + " to " + end_date.format());
 
-  var curr_date = start_date;
   // empty labels
   navConfig.data.labels = [];
 
-  while (curr_date.isSameOrBefore(end_date)) {
-    navConfig.data.labels.push(curr_date.format("DD MMM YYYY"));
-    curr_date = curr_date.add(1, "days");
+  while (start_date.isSameOrBefore(end_date)) {
+    navConfig.data.labels.push(start_date.format("DD MMM YYYY"));
+    start_date.add(1, "days");
   }
 }
 
@@ -20,13 +19,12 @@ function addWeeklyLabels() {
   var end_date = moment().startOf("day").day("Sunday"); // last sunday
   console.log("Setting labels from " + start_date.format() + " to " + end_date.format());
 
-  var curr_date = start_date;
   // empty labels
   navConfig.data.labels = [];
 
-  while (curr_date.isSameOrBefore(end_date)) {
-    navConfig.data.labels.push(curr_date.format("DD MMM YYYY"));
-    curr_date.add(1, "weeks");
+  while (start_date.isSameOrBefore(end_date)) {
+    navConfig.data.labels.push(start_date.format("DD MMM YYYY"));
+    start_date.add(1, "weeks");
   }
 }
 
@@ -36,13 +34,12 @@ function addMonthlyLabels() {
   var end_date = moment().startOf("day").date(1); // first day of this month
   console.log("Setting labels from " + start_date.format() + " to " + end_date.format());
 
-  var curr_date = start_date;
   // empty labels
   navConfig.data.labels = [];
 
-  while (curr_date.isSameOrBefore(end_date)) {
-    navConfig.data.labels.push(curr_date.format("DD MMM YYYY"));
-    curr_date.add(1, "months");
+  while (start_date.isSameOrBefore(end_date)) {
+    navConfig.data.labels.push(start_date.format("DD MMM YYYY"));
+    start_date.add(1, "months");
   }
 }
 
