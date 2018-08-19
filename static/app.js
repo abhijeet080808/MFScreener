@@ -1,45 +1,14 @@
-function addDailyLabels() {
-  // month is 0 indexed
-  var start_date = moment({ year: 2006, month: 3, day: 1 });
-  var end_date = moment().startOf("day");
-  console.log("Setting labels from " + start_date.format() + " to " + end_date.format());
-
+function addLabels(startDate, endDate, periodicity) {
   // empty labels
   navConfig.data.labels = [];
+  var currDate = startDate;
+  console.log("Setting labels from " + currDate.format() +
+              " to " + endDate.format() +
+              " with periodicity " + periodicity);
 
-  while (start_date.isSameOrBefore(end_date)) {
-    navConfig.data.labels.push(start_date.format("DD MMM YYYY"));
-    start_date.add(1, "days");
-  }
-}
-
-function addWeeklyLabels() {
-  // month is 0 indexed
-  var start_date = moment({ year: 2006, month: 3, day: 1 });
-  var end_date = moment().startOf("day").day("Sunday"); // last sunday
-  console.log("Setting labels from " + start_date.format() + " to " + end_date.format());
-
-  // empty labels
-  navConfig.data.labels = [];
-
-  while (start_date.isSameOrBefore(end_date)) {
-    navConfig.data.labels.push(start_date.format("DD MMM YYYY"));
-    start_date.add(1, "weeks");
-  }
-}
-
-function addMonthlyLabels() {
-  // month is 0 indexed
-  var start_date = moment({ year: 2006, month: 3, day: 1 });
-  var end_date = moment().startOf("day").date(1); // first day of this month
-  console.log("Setting labels from " + start_date.format() + " to " + end_date.format());
-
-  // empty labels
-  navConfig.data.labels = [];
-
-  while (start_date.isSameOrBefore(end_date)) {
-    navConfig.data.labels.push(start_date.format("DD MMM YYYY"));
-    start_date.add(1, "months");
+  while (currDate.isSameOrBefore(endDate)) {
+    navConfig.data.labels.push(currDate.format("DD MMM YYYY"));
+    currDate.add(periodicity, "days");
   }
 }
 
@@ -92,7 +61,7 @@ function addChart(mfCode, csvData) {
   // date (YYYY-MM-DD) vs value
   var navValues = {};
   for (var i = 0; i < csvLines.length; i++) {
-    var entries = csvLines[i].split(',');
+    var entries = csvLines[i].split(",");
     navValues[entries[0]] = entries[1];
   }
 
@@ -107,11 +76,11 @@ function addChart(mfCode, csvData) {
 }
 
 function removeChart(mfCode) {
-  for (var index in navConfig.data.datasets) {
-    if (navConfig.data.datasets[index].mfCode == mfCode) {
+  for (var i = 0; i < navConfig.data.datasets.length; i++) {
+    if (navConfig.data.datasets[i].mfCode == mfCode) {
       // remove the element
       console.log("Removing chart " + mfCode);
-      navConfig.data.datasets.splice(index, 1);
+      navConfig.data.datasets.splice(i, 1);
     }
   }
   navChart.update();
@@ -132,7 +101,7 @@ function addNav(mfCode, mfLabel) {
 
   getChart(mfCode);
 
-  btn.addEventListener('click', function() {
+  btn.addEventListener("click", function() {
     removeChart(mfCode);
     document.getElementById("divNavList").removeChild(this);
   }, false);
@@ -149,8 +118,8 @@ function getNavLabel(mfCode) {
 }
 
 function navAutocompleteCb(ui) {
-  for (var index in navConfig.data.datasets) {
-    if (navConfig.data.datasets[index].mfCode == ui.item.mfcode) {
+  for (var i = 0; i < navConfig.data.datasets.length; i++) {
+    if (navConfig.data.datasets[i].mfCode == ui.item.mfcode) {
       // element already exists
       return;
     }
@@ -158,11 +127,52 @@ function navAutocompleteCb(ui) {
   addNav(ui.item.mfcode, ui.item.label);
 }
 
+function navDateChangeCb() {
+  var startDate = moment($("#inputNavStartDate").datepicker("getDate"));
+  var endDate = moment($("#inputNavEndDate").datepicker("getDate"));
+
+  if (startDate.isAfter(endDate)) {
+    return;
+  }
+
+  var currMfCodes = [];
+  for (var i = 0; i < navConfig.data.datasets.length; i++) {
+    currMfCodes.push(navConfig.data.datasets[i].mfCode);
+  }
+
+  // clear existing chart datasets
+  navConfig.data.datasets = [];
+
+  addLabels(startDate, endDate, getPeriodicity(startDate, endDate));
+
+  for (var i = 0; i < currMfCodes.length; i++) {
+    getChart(currMfCodes[i]);
+  }
+}
+
+function getPeriodicity(startDate, endDate) {
+  // there should be only upto 200 data points regardless of the given span
+  var spanDays = endDate.diff(startDate, "days");
+  return Math.max(1, Math.ceil(spanDays/200));
+}
+
+function updateNavDate(years) {
+  $("#inputNavStartDate").datepicker("setDate", moment().startOf("day").subtract(years, "years").format("DD MMM YYYY"));
+  $("#inputNavEndDate").datepicker("setDate", moment().startOf("day").format("DD MMM YYYY"));
+  navDateChangeCb();
+}
+
+// ------------------------------------------------------------------ //
+
 var navConfig;
 var navChart;
 var mfLabelLookup;
+// month is 0 indexed
+var defStartDate = moment({ year: 2006, month: 3, day: 1 });
+var defEndDate = moment().startOf("day");
 
 $(function() {
+  // https://jqueryui.com/autocomplete/
   $("#inputNavSearch").autocomplete({
     source: mf_codes,
     delay: 300,
@@ -174,18 +184,51 @@ $(function() {
     }
   });
 
+  // https://jqueryui.com/datepicker/
+  $("#inputNavStartDate").datepicker({
+    changeMonth: true,
+    changeYear: true,
+    dateFormat: "dd M yy", // 01 Aug 2018
+    minDate: defStartDate.format("DD MMM YYYY"),
+    maxDate: defEndDate.format("DD MMM YYYY"),
+    onSelect: function(dateText, instance) {
+      if(dateText !== instance.lastVal){
+        $(this).change();
+      }
+    }
+  });
+  $("#inputNavStartDate").val(defStartDate.format("DD MMM YYYY"));
+  $("#inputNavStartDate").change(function() {
+    navDateChangeCb();
+  });
+
+  $("#inputNavEndDate").datepicker({
+    changeMonth: true,
+    changeYear: true,
+    dateFormat: "dd M yy", // 01 Aug 2018
+    minDate: defStartDate.format("DD MMM YYYY"),
+    maxDate: defEndDate.format("DD MMM YYYY"),
+    onSelect: function(dateText, instance) {
+      if(dateText !== instance.lastVal){
+        $(this).change();
+      }
+    }
+  });
+  $("#inputNavEndDate").val(defEndDate.format("DD MMM YYYY"),);
+  $("#inputNavEndDate").change(function() {
+    navDateChangeCb();
+  });
+
   // http://www.chartjs.org/samples/latest/charts/line/basic.html
   navConfig =  {
-    type: 'line',
+    type: "line",
     data: {
       labels: [],
       datasets: []
     }
   };
 
-  //addDailyLabels();
-  //addWeeklyLabels();
-  addMonthlyLabels();
+  addLabels(defStartDate, defEndDate, getPeriodicity(defStartDate, defEndDate));
 
   navChart = new Chart(document.getElementById("canvasNavChart"), navConfig);
 

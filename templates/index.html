@@ -7,6 +7,9 @@
 
     <title>MF Screener</title>
 
+    <!--https://realfavicongenerator.net/-->
+    <link rel="shortcut icon" href="/static/favicon.ico">
+
     <!--https://www.tutorialrepublic.com/twitter-bootstrap-tutorial/-->
     <!--https://www.w3schools.com/bootstrap/default.asp-->
     <link rel="stylesheet" href="/static/bootstrap.css">
@@ -46,20 +49,59 @@
 
         <div id="divNavList" class="col-md-3">
           <!--Column left-->
-          <h4>Mutual Fund Selector</h4>
-          <input id="inputNavSearch" class="form-control autocomplete" placeholder="Mutual Fund">
+          <h4 style="margin-top: 1em">Mutual Fund Selector</h4>
+          <input id="inputNavSearch" class="form-control autocomplete" style="margin-top: 1em" placeholder="Mutual Fund">
         </div>
 
         <div id="divNavChart" class="col-md-9">
           <!--Column right-->
-		      <canvas id="canvasNavChart" style="width: 100%"></canvas>
+          <div class="row">
+
+            <div class="col-md-2">
+              <label class="control-label" style="margin-top: 1em">&nbsp;</label>
+              <button id="btnLastTenYr" class="btn btn-default btn-block" onclick="updateNavDate(10)">Last 10 years</button>
+            </div>
+
+            <div class="col-md-2">
+              <label class="control-label" style="margin-top: 1em">&nbsp;</label>
+              <button id="btnLastFiveYr" class="btn btn-default btn-block" onclick="updateNavDate(5)">Last 5 years</button>
+            </div>
+
+            <div class="col-md-2">
+              <label class="control-label" style="margin-top: 1em">&nbsp;</label>
+              <button id="btnLastThreeYr" class="btn btn-default btn-block" onclick="updateNavDate(3)">Last 3 years</button>
+            </div>
+
+            <div class="col-md-2">
+              <label class="control-label" style="margin-top: 1em">&nbsp;</label>
+              <button id="btnLastOneYr" class="btn btn-default btn-block" onclick="updateNavDate(1)">Last 1 year</button>
+            </div>
+
+            <div class="col-md-2">
+              <label class="control-label" for="inputNavStartDate" style="margin-top: 1em">Start Date</label>
+              <input id="inputNavStartDate" class="form-control" readOnly="true">
+            </div>
+
+
+            <div class="col-md-2">
+              <label class="control-label" for="inputNavEndDate" style="margin-top: 1em">End Date</label>
+              <input id="inputNavEndDate" class="form-control" readOnly="true">
+            </div>
+
+          </div>
+
+		      <canvas id="canvasNavChart" style="width: 100%; margin-top: 1em"></canvas>
         </div>
 
       </div>
 
-      <footer class="text-center text-muted">
-        <p>&copy; Copyright 2018 Abhijeet Baruah</p>
-      </footer>
+      <div class="row">
+        <div class="col-xs-12">
+          <footer class="text-center text-muted" style="margin-top: 1em">
+            <p>&copy; Copyright 2018 Abhijeet Baruah</p>
+          </footer>
+        </div>
+      </div>
 
     </div>
 
