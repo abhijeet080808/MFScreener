@@ -56,6 +56,7 @@ def read_all_mf(start_date=get_first_day(),
                "May" : 5, "Jun" : 6, "Jul" : 7, "Aug" : 8,
                "Sep" : 9, "Oct" : 10, "Nov" : 11, "Dec" : 12 }
 
+    # int (code) vs MutualFund
     mutual_funds = dict()
 
     curr_date = start_date
@@ -92,6 +93,8 @@ def read_all_mf(start_date=get_first_day(),
                         print("Nav: " + str(e))
                         print(matches.group(0))
                         continue
+                    if nav == 0:
+                        continue
                     try:
                         year = int(matches.group(8))
                     except ValueError as e:
@@ -114,14 +117,14 @@ def read_all_mf(start_date=get_first_day(),
 
                     if mutual_funds.get(code) is None:
                         mutual_funds[code] = mutualfund.MutualFund(
-                            code, set([name]), dict([(date, nav)]))
+                            code, set([name]), dict([(date, mutualfund.MFData(nav=nav))]))
                     else:
                         mutual_funds[code].names.add(name)
-                        mutual_funds[code].navs[date] = nav
+                        mutual_funds[code].mf_data[date] = mutualfund.MFData(nav=nav)
 
                     #print(eval(repr(mutual_funds[code])))
 
-        print("Processed " + file_name)
+        #print("Processed " + file_name)
         # increment to next month
         curr_date = datetime.date(curr_date.year + int(curr_date.month / 12),
                                   ((curr_date.month % 12) + 1), 1)
@@ -130,28 +133,65 @@ def read_all_mf(start_date=get_first_day(),
     return mutual_funds
 
 
-def fill_missing_navs(mutual_funds,
+def fill_missing_data(mutual_funds,
                       start_date=get_first_day(),
                       end_date=get_last_month_last_day()):
 
     for mf in mutual_funds.values():
         curr_date = start_date
 
-        first_date = min(mf.navs.keys())
-        last_date = max(mf.navs.keys())
+        first_date = min(mf.mf_data.keys())
+        last_date = max(mf.mf_data.keys())
 
         while curr_date <= end_date:
             if curr_date > first_date and \
                curr_date < last_date and \
-               mf.navs.get(curr_date) is None:
+               mf.mf_data.get(curr_date) is None:
                    # fill gaps with previous days's value
-                   mf.navs[curr_date] = \
-                       mf.navs[curr_date - datetime.timedelta(days=1)]
+                   mf.mf_data[curr_date] = \
+                       mf.mf_data[curr_date - datetime.timedelta(days=1)]
             curr_date = curr_date + datetime.timedelta(days=1)
 
-        print("Cleaned " + str(mf.code))
+        #print("Cleaned " + str(mf.code))
 
     print("Cleaned up " + str(len(mutual_funds)) + " mutual funds")
+    return mutual_funds
+
+
+def add_rolling_returns(mutual_funds):
+
+    for mf in mutual_funds.values():
+
+        for nav_date in mf.mf_data:
+            nav_today = mf.mf_data[nav_date].nav
+
+            mf_data_one_year_ago = \
+                mf.mf_data.get(nav_date - datetime.timedelta(days=365))
+            if mf_data_one_year_ago is None:
+                continue
+            nav_one_year_ago = mf_data_one_year_ago.nav
+            mf.mf_data[nav_date].one_year_ret = round(
+                (nav_today - nav_one_year_ago) / nav_one_year_ago * 100, 4)
+
+            mf_data_three_year_ago = \
+                mf.mf_data.get(nav_date - datetime.timedelta(days=1095))
+            if mf_data_three_year_ago is None:
+                continue
+            nav_three_year_ago = mf_data_three_year_ago.nav
+            mf.mf_data[nav_date].three_year_ret = round(
+                (nav_today - nav_three_year_ago) / nav_three_year_ago * 100, 4)
+
+            mf_data_five_year_ago = \
+                mf.mf_data.get(nav_date - datetime.timedelta(days=1825))
+            if mf_data_five_year_ago is None:
+                continue
+            nav_five_year_ago = mf_data_five_year_ago.nav
+            mf.mf_data[nav_date].five_year_ret = round(
+                (nav_today - nav_five_year_ago) / nav_five_year_ago * 100, 4)
+
+        #print("Calculated rolling returns for " + str(mf.code))
+
+    print("Calculated rolling returns for " + str(len(mutual_funds)) + " mutual funds")
     return mutual_funds
 
 
@@ -164,10 +204,16 @@ def write_mf_nav_to_csv(mutual_funds, directory="static/csv"):
         file_name = os.path.join(directory, str(mf.code) + ".csv")
         with open(file_name, "w") as f:
             writer = csv.writer(f)
-            for nav_date in sorted(mf.navs.keys()):
-                writer.writerow([nav_date, mf.navs[nav_date]])
+            for nav_date in sorted(mf.mf_data.keys()):
+                writer.writerow([nav_date,
+                                 mf.mf_data[nav_date].nav,
+                                 mf.mf_data[nav_date].one_year_ret,
+                                 mf.mf_data[nav_date].three_year_ret,
+                                 mf.mf_data[nav_date].five_year_ret])
 
-        print("Wrote " + file_name)
+        #print("Wrote " + file_name)
+
+    print("Wrote CSVs for " + str(len(mutual_funds)) + " mutual funds")
 
 
 def write_mf_lookup_to_csv(mutual_funds, directory="static/csv"):
@@ -192,7 +238,8 @@ def main():
 
     download_raw_nav()
     mutual_funds = read_all_mf()
-    mutual_funds = fill_missing_navs(mutual_funds)
+    mutual_funds = fill_missing_data(mutual_funds)
+    mutual_funds = add_rolling_returns(mutual_funds)
     write_mf_nav_to_csv(mutual_funds)
     write_mf_lookup_to_csv(mutual_funds)
 
