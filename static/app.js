@@ -157,8 +157,10 @@ function getPeriodicity(startDate, endDate) {
 }
 
 function updateNavDate(years) {
-  $("#inputNavStartDate").datepicker("setDate", moment().startOf("day").subtract(years, "years").format("DD MMM YYYY"));
-  $("#inputNavEndDate").datepicker("setDate", moment().startOf("day").format("DD MMM YYYY"));
+  $("#inputNavStartDate").datepicker("setDate",
+    moment().startOf("day").subtract(years, "years").format("DD MMM YYYY"));
+  $("#inputNavEndDate").datepicker("setDate",
+    moment().startOf("day").format("DD MMM YYYY"));
   navDateChangeCb();
 }
 
