@@ -34,7 +34,7 @@ function readTextFile(mfCode, url) {
 function dynamicColors() {
   var h = Math.floor(Math.random() * 255);
   var s = (Math.floor(Math.random() * 40) + 30) + "%";
-  var l = (Math.floor(Math.random() * 40) + 30) + "%";
+  var l = (Math.floor(Math.random() * 20) + 50) + "%";
   return "hsl(" + h + "," + s + "," + l + ")";
 }
 
