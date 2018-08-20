@@ -227,6 +227,23 @@ $(function() {
     data: {
       labels: [],
       datasets: []
+    },
+    options: {
+      title: {
+        display: true,
+        text: "NAV Chart"
+      },
+      legend: {
+        position: "top"
+      },
+      scales: {
+        yAxes: [{
+          scaleLabel: {
+            display: true,
+            labelString: "NAV"
+          }
+        }]
+      }
     }
   };
 
