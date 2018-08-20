@@ -58,18 +58,29 @@ function addChart(mfCode, csvData) {
   var csvLines = csvData.split(/\r\n|\n/);
   // remove last empty element
   csvLines.splice(-1);
-  // date (YYYY-MM-DD) vs value
-  var navValues = {};
+  // date (YYYY-MM-DD) vs
+  // [nav, one year return, three year returns, five year returns]
+  var mfValues = {};
   for (var i = 0; i < csvLines.length; i++) {
     var entries = csvLines[i].split(",");
-    navValues[entries[0]] = entries[1];
+    var date = entries[0];
+    entries.splice(0, 1); // remove first elem
+    mfValues[date] = entries;
   }
 
   // get values for the relevant time markers
   for (var i = 0; i < navConfig.data.labels.length; i++) {
     var date = moment(navConfig.data.labels[i], "DD MMM YYYY");
-    dataset.data.push(navValues[date.format("YYYY-MM-DD")]);
+    var mfVal = mfValues[date.format("YYYY-MM-DD")];
+    if (mfVal != null) {
+      // add nav value if available
+      dataset.data.push(mfVal[0]);
+    } else {
+      mfVal = dataset.data.push(null);
+    }
   }
+
+  // https://stackoverflow.com/questions/38085352/how-to-use-two-y-axes-in-chart-js-v2
 
   navConfig.data.datasets.push(dataset);
   navChart.update();
