@@ -1,3 +1,5 @@
+"use strict";
+
 function dynamicColors() {
   var h = Math.floor(Math.random() * 255);
   var s = (Math.floor(Math.random() * 40) + 30) + "%";
@@ -32,7 +34,7 @@ function readTextFile(mfCode, url) {
 
   req.onreadystatechange = function() {
     // file is downloaded
-    if (req.readyState == XMLHttpRequest.DONE) {
+    if (req.readyState === XMLHttpRequest.DONE) {
       addChart(mfCode, req.responseText);
     }
   }
@@ -40,19 +42,19 @@ function readTextFile(mfCode, url) {
 
 function readCsv(csvData) {
   // read all csv entries to a dict
-  var csvLines = csvData.split(/\r\n|\n/);
+  var csvLines = csvData.split(/\r?\n/);
   // remove last empty element
   csvLines.splice(-1);
   // date (YYYY-MM-DD) vs
   // [nav, one year return, three year returns, five year returns]
   var mfValues = {};
   for (var i = 0; i < csvLines.length; i++) {
-    console.log("Added line " + csvLines[i]);
     var entries = csvLines[i].split(",");
-    console.log("Added as " + entries);
-    var date = entries[0];
-    entries.splice(0, 1); // remove first elem
-    mfValues[date] = entries;
+    if (entries.length > 1) {
+      // remove first elem and put in as date
+      var date = entries.splice(0, 1);
+      mfValues[date] = entries;
+    }
   }
 
   return mfValues;
@@ -98,11 +100,21 @@ function addChart(mfCode, csvData) {
   for (var i = 0; i < navConfig.data.labels.length; i++) {
     var date = moment(navConfig.data.labels[i], "DD MMM YYYY");
     var mfVal = mfValues[date.format("YYYY-MM-DD")];
-    if (mfVal != null) {
+
+    if (mfVal !== undefined) {
       // add nav value if available
-      navDataset.data.push(mfVal[0]);
-      // add three years return
-      threeYrRetDataset.data.push(mfVal[2]);
+      if (mfVal[0] !== undefined && mfVal[0].length > 0) {
+        navDataset.data.push(mfVal[0]);
+      }
+      else {
+        navDataset.data.push(null);
+      }
+      // add three years return if available
+      if (mfVal[2] !== undefined && mfVal[2].length > 0) {
+        threeYrRetDataset.data.push(mfVal[2]);
+      } else {
+        threeYrRetDataset.data.push(null);
+      }
     } else {
       navDataset.data.push(null);
       threeYrRetDataset.data.push(null);
@@ -153,7 +165,7 @@ function addNav(mfCode, mfLabel) {
 }
 
 function getNavLabel(mfCode) {
-  if (mfLabelLookup == null) {
+  if (mfLabelLookup === undefined) {
     mfLabelLookup = {};
     for (var i = 0; i < mf_codes.length; i++) {
       mfLabelLookup[mf_codes[i].mfcode] = mf_codes[i].label;
@@ -183,7 +195,7 @@ function navDateChangeCb() {
   var currMfCodes = [];
   for (var i = 0; i < navConfig.data.datasets.length; i++) {
     var mfCode = navConfig.data.datasets[i].mfCode;
-    if (currMfCodes.includes(mfCode) == false) {
+    if (currMfCodes.includes(mfCode) === false) {
       currMfCodes.push(mfCode);
     }
   }
@@ -242,7 +254,7 @@ $(function() {
     minDate: defStartDate.format("DD MMM YYYY"),
     maxDate: defEndDate.format("DD MMM YYYY"),
     onSelect: function(dateText, instance) {
-      if(dateText !== instance.lastVal){
+      if (dateText !== instance.lastVal) {
         $(this).change();
       }
     }
@@ -259,7 +271,7 @@ $(function() {
     minDate: defStartDate.format("DD MMM YYYY"),
     maxDate: defEndDate.format("DD MMM YYYY"),
     onSelect: function(dateText, instance) {
-      if(dateText !== instance.lastVal){
+      if (dateText !== instance.lastVal) {
         $(this).change();
       }
     }

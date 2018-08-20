@@ -88,7 +88,7 @@ def read_all_mf(start_date=get_first_day(),
                        matches.group(3) == "-":
                            continue
                     try:
-                        nav = float(matches.group(3).replace(",", ""))
+                        nav = round(float(matches.group(3).replace(",", "")), 4)
                     except ValueError as e:
                         print("Nav: " + str(e))
                         print(matches.group(0))
@@ -205,6 +205,7 @@ def write_mf_nav_to_csv(mutual_funds, directory="static/csv"):
         with open(file_name, "w") as f:
             writer = csv.writer(f)
             for nav_date in sorted(mf.mf_data.keys()):
+                # None is written as empty string
                 writer.writerow([nav_date,
                                  mf.mf_data[nav_date].nav,
                                  mf.mf_data[nav_date].one_year_ret,
