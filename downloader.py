@@ -160,6 +160,9 @@ def fill_missing_data(mutual_funds,
 
 def add_rolling_returns(mutual_funds):
 
+    # return = (final_value - initial_value) / initial_value x 100
+    # cagr = ((final_value / initial_value)^(1 / number of periods) - 1) x 100
+
     for mf in mutual_funds.values():
 
         for nav_date in mf.mf_data:
@@ -171,7 +174,7 @@ def add_rolling_returns(mutual_funds):
                 continue
             nav_one_year_ago = mf_data_one_year_ago.nav
             mf.mf_data[nav_date].one_year_ret = round(
-                (nav_today - nav_one_year_ago) / nav_one_year_ago * 100, 4)
+                (((nav_today / nav_one_year_ago) ** (1 / 1)) - 1) * 100, 4)
 
             mf_data_three_year_ago = \
                 mf.mf_data.get(nav_date - datetime.timedelta(days=1095))
@@ -179,7 +182,7 @@ def add_rolling_returns(mutual_funds):
                 continue
             nav_three_year_ago = mf_data_three_year_ago.nav
             mf.mf_data[nav_date].three_year_ret = round(
-                (nav_today - nav_three_year_ago) / nav_three_year_ago * 100, 4)
+                (((nav_today / nav_three_year_ago) ** (1 / 3)) - 1) * 100, 4)
 
             mf_data_five_year_ago = \
                 mf.mf_data.get(nav_date - datetime.timedelta(days=1825))
@@ -187,7 +190,7 @@ def add_rolling_returns(mutual_funds):
                 continue
             nav_five_year_ago = mf_data_five_year_ago.nav
             mf.mf_data[nav_date].five_year_ret = round(
-                (nav_today - nav_five_year_ago) / nav_five_year_ago * 100, 4)
+                (((nav_today / nav_five_year_ago) ** (1 / 5)) - 1) * 100, 4)
 
         #print("Calculated rolling returns for " + str(mf.code))
 

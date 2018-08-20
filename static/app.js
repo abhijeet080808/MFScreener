@@ -217,8 +217,10 @@ function getPeriodicity(startDate, endDate) {
 }
 
 function updateNavDate(years) {
+  // "years" earlier
   $("#inputNavStartDate").datepicker("setDate",
     moment().startOf("day").subtract(years, "years").format("DD MMM YYYY"));
+  // today
   $("#inputNavEndDate").datepicker("setDate",
     moment().startOf("day").format("DD MMM YYYY"));
   navDateChangeCb();
@@ -325,7 +327,7 @@ $(function() {
     }
   };
 
-  addLabels(defStartDate, defEndDate, getPeriodicity(defStartDate, defEndDate));
+  updateNavDate(5);
 
   navChart = new Chart(document.getElementById("canvasNavChart"), navConfig);
 
