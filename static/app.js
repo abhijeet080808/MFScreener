@@ -1,3 +1,10 @@
+function dynamicColors() {
+  var h = Math.floor(Math.random() * 255);
+  var s = (Math.floor(Math.random() * 40) + 30) + "%";
+  var l = (Math.floor(Math.random() * 20) + 50) + "%";
+  return "hsl(" + h + "," + s + "," + l + ")";
+}
+
 function addLabels(startDate, endDate, periodicity) {
   // empty labels
   navConfig.data.labels = [];
@@ -31,29 +38,7 @@ function readTextFile(mfCode, url) {
   }
 }
 
-function dynamicColors() {
-  var h = Math.floor(Math.random() * 255);
-  var s = (Math.floor(Math.random() * 40) + 30) + "%";
-  var l = (Math.floor(Math.random() * 20) + 50) + "%";
-  return "hsl(" + h + "," + s + "," + l + ")";
-}
-
-function addChart(mfCode, csvData) {
-  console.log("Adding chart " + mfCode);
-
-  // https://www.chartjs.org/docs/latest/charts/line.html
-  var color = dynamicColors();
-  var dataset = {
-    label: mfCode,
-    data: [],
-    backgroundColor: color,
-    borderColor: color,
-    fill: false,
-    pointRadius: 0,
-    pointHitRadius: 5,
-    mfCode: mfCode
-  }
-
+function readCsv(csvData) {
   // read all csv entries to a dict
   var csvLines = csvData.split(/\r\n|\n/);
   // remove last empty element
@@ -62,10 +47,51 @@ function addChart(mfCode, csvData) {
   // [nav, one year return, three year returns, five year returns]
   var mfValues = {};
   for (var i = 0; i < csvLines.length; i++) {
+    console.log("Added line " + csvLines[i]);
     var entries = csvLines[i].split(",");
+    console.log("Added as " + entries);
     var date = entries[0];
     entries.splice(0, 1); // remove first elem
     mfValues[date] = entries;
+  }
+
+  return mfValues;
+}
+
+function addChart(mfCode, csvData) {
+  console.log("Adding chart " + mfCode);
+
+  var mfValues = readCsv(csvData);
+  var color = dynamicColors();
+
+  // https://www.chartjs.org/docs/latest/charts/line.html
+  // https://stackoverflow.com/questions/38085352/
+  // how-to-use-two-y-axes-in-chart-js-v2
+  var navDataset = {
+    label: "NAV - " + mfCode,
+    data: [],
+    yAxisID: "NAV",
+    backgroundColor: color,
+    borderColor: color,
+    borderWidth: 2,
+    fill: false,
+    pointRadius: 0,
+    pointHitRadius: 5,
+    mfCode: mfCode
+  }
+
+  var threeYrRetDataset = {
+    label: "3 Yr Ret - " + mfCode,
+    data: [],
+    yAxisID: "THREE_YR_RET",
+    backgroundColor: color,
+    borderColor: color,
+    borderWidth: 2,
+    borderDash: [2, 2],
+    fill: false,
+    pointRadius: 0,
+    pointHitRadius: 5,
+    mfCode: mfCode
   }
 
   // get values for the relevant time markers
@@ -74,26 +100,34 @@ function addChart(mfCode, csvData) {
     var mfVal = mfValues[date.format("YYYY-MM-DD")];
     if (mfVal != null) {
       // add nav value if available
-      dataset.data.push(mfVal[0]);
+      navDataset.data.push(mfVal[0]);
+      // add three years return
+      threeYrRetDataset.data.push(mfVal[2]);
     } else {
-      mfVal = dataset.data.push(null);
+      navDataset.data.push(null);
+      threeYrRetDataset.data.push(null);
     }
   }
 
-  // https://stackoverflow.com/questions/38085352/how-to-use-two-y-axes-in-chart-js-v2
+  navConfig.data.datasets.push(navDataset);
+  navConfig.data.datasets.push(threeYrRetDataset);
 
-  navConfig.data.datasets.push(dataset);
+  console.log("Total datasets " + navConfig.data.datasets.length);
   navChart.update();
 }
 
 function removeChart(mfCode) {
-  for (var i = 0; i < navConfig.data.datasets.length; i++) {
+  console.log("Removing chart " + mfCode);
+
+  var i = navConfig.data.datasets.length;
+  while (i--) {
     if (navConfig.data.datasets[i].mfCode == mfCode) {
       // remove the element
-      console.log("Removing chart " + mfCode);
       navConfig.data.datasets.splice(i, 1);
     }
   }
+
+  console.log("Total datasets " + navConfig.data.datasets.length);
   navChart.update();
 }
 
@@ -148,7 +182,10 @@ function navDateChangeCb() {
 
   var currMfCodes = [];
   for (var i = 0; i < navConfig.data.datasets.length; i++) {
-    currMfCodes.push(navConfig.data.datasets[i].mfCode);
+    var mfCode = navConfig.data.datasets[i].mfCode;
+    if (currMfCodes.includes(mfCode) == false) {
+      currMfCodes.push(mfCode);
+    }
   }
 
   // clear existing chart datasets
@@ -233,6 +270,7 @@ $(function() {
   });
 
   // http://www.chartjs.org/samples/latest/charts/line/basic.html
+  // http://www.chartjs.org/docs/latest/
   navConfig =  {
     type: "line",
     data: {
@@ -245,13 +283,30 @@ $(function() {
         text: "NAV Chart"
       },
       legend: {
-        position: "top"
+        position: "right"
       },
       scales: {
         yAxes: [{
+          id: "NAV",
+          position: "left",
+          type: "linear",
+          ticks: {
+            suggestedMin: 0,
+          },
           scaleLabel: {
             display: true,
             labelString: "NAV"
+          }
+        },{
+          id: "THREE_YR_RET",
+          position: "right",
+          type: "linear",
+          ticks: {
+            suggestedMin: 0,
+          },
+          scaleLabel: {
+            display: true,
+            labelString: "3 Year Return"
           }
         }]
       }
