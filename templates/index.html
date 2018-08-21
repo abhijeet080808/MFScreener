@@ -33,24 +33,32 @@
 
   <body>
 
-    <div class="container-fluid">
+    <nav class="navbar navbar-inverse">
 
-      <div class="page-header">
-        <h2>MF Screener</h2>
+      <div class="container-fluid">
+
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#"><b>MF Screener</b></a>
+        </div>
+
+        <ul class="nav navbar-nav">
+          <li class="active"><a href="#">Mutual Funds</a></li>
+          <li><a href="#">Portfolio</a></li>
+          <li><a href="#">Misc</a></li>
+        </ul>
+
       </div>
 
-      <ul class="nav nav-tabs">
-        <li class="active"><a href="#">Mutual Funds</a></li>
-        <li><a href="#">Portfolio</a></li>
-        <li><a href="#">Misc</a></li>
-      </ul>
+    </nav>
+
+    <div class="container-fluid">
 
       <!--Row with two columns-->
       <div class="row">
 
         <div id="divNavList" class="col-md-2">
           <!--Column left-->
-          <h4 style="margin-top: 1em">Mutual Fund Selector</h4>
+          <h4>Mutual Fund Selector</h4>
           <input id="inputNavSearch" class="form-control autocomplete" style="margin-top: 1em" placeholder="Mutual Fund">
         </div>
 
@@ -59,33 +67,32 @@
           <div class="row">
 
             <div class="col-md-2">
-              <label class="control-label" style="margin-top: 1em">&nbsp;</label>
+              <label class="control-label">&nbsp;</label>
               <button id="btnLastTenYr" class="btn btn-default btn-block" onclick="updateNavDate(10)">Last 10 years</button>
             </div>
 
             <div class="col-md-2">
-              <label class="control-label" style="margin-top: 1em">&nbsp;</label>
+              <label class="control-label">&nbsp;</label>
               <button id="btnLastFiveYr" class="btn btn-default btn-block" onclick="updateNavDate(5)">Last 5 years</button>
             </div>
 
             <div class="col-md-2">
-              <label class="control-label" style="margin-top: 1em">&nbsp;</label>
+              <label class="control-label">&nbsp;</label>
               <button id="btnLastThreeYr" class="btn btn-default btn-block" onclick="updateNavDate(3)">Last 3 years</button>
             </div>
 
             <div class="col-md-2">
-              <label class="control-label" style="margin-top: 1em">&nbsp;</label>
+              <label class="control-label">&nbsp;</label>
               <button id="btnLastOneYr" class="btn btn-default btn-block" onclick="updateNavDate(1)">Last 1 year</button>
             </div>
 
             <div class="col-md-2">
-              <label class="control-label" for="inputNavStartDate" style="margin-top: 1em">Start Date</label>
+              <label class="control-label" for="inputNavStartDate">Start Date</label>
               <input id="inputNavStartDate" class="form-control" readOnly="true">
             </div>
 
-
             <div class="col-md-2">
-              <label class="control-label" for="inputNavEndDate" style="margin-top: 1em">End Date</label>
+              <label class="control-label" for="inputNavEndDate">End Date</label>
               <input id="inputNavEndDate" class="form-control" readOnly="true">
             </div>
 
