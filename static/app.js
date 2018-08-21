@@ -2,16 +2,14 @@
 
 function getChartColor(index) {
   // https://gka.github.io/chroma.js/
-  // https://gka.github.io/palettes/
   // https://codepen.io/stevepepple/post/color-scales-for-charts-and-maps
   if (chartColors === undefined) {
     chartColors =
-      //chroma.scale("Accent").
-      chroma.scale("Paired").
-      //chroma.scale("Set3").
+      chroma.
+      scale("Accent").
+      //scale("Set3").
       mode("lch").
-      //correctLightness().
-      colors(10);
+      colors(maxCharts);
   }
 
   return chartColors[index];
@@ -190,12 +188,17 @@ function getNavLabel(mfCode) {
 }
 
 function navAutocompleteCb(ui) {
+  if (navConfig.data.datasets.length >= maxCharts) {
+    return;
+  }
+
   for (var i = 0; i < navConfig.data.datasets.length; i++) {
     if (navConfig.data.datasets[i].mfCode == ui.item.mfcode) {
       // element already exists
       return;
     }
   }
+
   addNav(ui.item.mfcode, ui.item.label);
 }
 
@@ -243,6 +246,7 @@ function updateNavDate(years) {
 
 // ------------------------------------------------------------------ //
 
+var maxCharts = 10;
 var navConfig;
 var navChart;
 var mfLabelLookup;
