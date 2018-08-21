@@ -1,10 +1,25 @@
 "use strict";
 
-function dynamicColors() {
-  var h = Math.floor(Math.random() * 255);
-  var s = (Math.floor(Math.random() * 40) + 30) + "%";
-  var l = (Math.floor(Math.random() * 20) + 50) + "%";
-  return "hsl(" + h + "," + s + "," + l + ")";
+function getChartColor(index) {
+  // https://gka.github.io/chroma.js/
+  // https://gka.github.io/palettes/
+  // https://codepen.io/stevepepple/post/color-scales-for-charts-and-maps
+  if (chartColors === undefined) {
+    chartColors =
+      //chroma.scale("Accent").
+      chroma.scale("Paired").
+      //chroma.scale("Set3").
+      mode("lch").
+      //correctLightness().
+      colors(10);
+  }
+
+  return chartColors[index];
+
+  //var h = Math.floor(Math.random() * 255);
+  //var s = (Math.floor(Math.random() * 40) + 30) + "%";
+  //var l = (Math.floor(Math.random() * 20) + 50) + "%";
+  //return "hsl(" + h + "," + s + "," + l + ")";
 }
 
 function addLabels(startDate, endDate, periodicity) {
@@ -64,7 +79,7 @@ function addChart(mfCode, csvData) {
   console.log("Adding chart " + mfCode);
 
   var mfValues = readCsv(csvData);
-  var color = dynamicColors();
+  var color = getChartColor(navConfig.data.datasets.length / 2);
 
   // https://www.chartjs.org/docs/latest/charts/line.html
   // https://stackoverflow.com/questions/38085352/
@@ -234,6 +249,7 @@ var mfLabelLookup;
 // month is 0 indexed
 var defStartDate = moment({ year: 2006, month: 3, day: 1 });
 var defEndDate = moment().startOf("day");
+var chartColors;
 
 $(function() {
   // https://jqueryui.com/autocomplete/
@@ -334,5 +350,8 @@ $(function() {
   addNav("113177", getNavLabel("113177"));
   addNav("130502", getNavLabel("130502"));
   addNav("125494", getNavLabel("125494"));
+
+  // Serialize URL
+  // https://gka.github.io/palettes/
 });
 

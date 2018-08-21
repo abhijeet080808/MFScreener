@@ -2,6 +2,7 @@
 
 import csv
 import datetime
+import math
 import mutualfund
 import os.path
 import re
@@ -21,7 +22,8 @@ def download_raw_nav(overwrite=False,
                      end_date=get_last_month_last_day(),
                      directory="nav"):
 
-    # http://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx?frmdt=01-Jan-2008&todt=31-Jan-2008
+    # http://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx?
+    # frmdt=01-Jan-2008&todt=31-Jan-2008
     url = "http://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx?"
 
     if not os.path.exists(directory):
@@ -116,13 +118,18 @@ def read_all_mf(start_date=get_first_day(),
                     date = datetime.date(year, month, day);
 
                     if mutual_funds.get(code) is None:
-                        mutual_funds[code] = mutualfund.MutualFund(
-                            code, set([name]), dict([(date, mutualfund.MFData(nav=nav))]))
+                        mutual_funds[code] = \
+                            mutualfund.MutualFund(
+                                code,
+                                set([name]),
+                                dict([(date, mutualfund.MFData(nav=nav))]))
                     else:
                         mutual_funds[code].names.add(name)
-                        mutual_funds[code].mf_data[date] = mutualfund.MFData(nav=nav)
+                        mutual_funds[code].mf_data[date] = \
+                            mutualfund.MFData(nav=nav)
 
-                    #print(eval(repr(mutual_funds[code])))
+                    if code == "108795":
+                        print(eval(repr(mutual_funds[code])))
 
         #print("Processed " + file_name)
         # increment to next month
@@ -158,10 +165,25 @@ def fill_missing_data(mutual_funds,
     return mutual_funds
 
 
-def add_rolling_returns(mutual_funds):
+def calculate_cagr(mf_code, date, nav_present, nav_past, years):
 
     # return = (final_value - initial_value) / initial_value x 100
     # cagr = ((final_value / initial_value)^(1 / number of periods) - 1) x 100
+
+    try:
+        return round(
+            (math.pow((nav_present / nav_past), (1 / years)) - 1) * 100, 4)
+    except ValueError as e:
+        print("Error: " + \
+              " mf_code " + str(mf_code) + \
+              " date " + str(date) + \
+              " nav_present " + str(nav_present) + \
+              " nav_past " + str(nav_past) + \
+              " years " + str(years))
+        raise
+
+
+def add_rolling_returns(mutual_funds):
 
     for mf in mutual_funds.values():
 
@@ -173,28 +195,41 @@ def add_rolling_returns(mutual_funds):
             if mf_data_one_year_ago is None:
                 continue
             nav_one_year_ago = mf_data_one_year_ago.nav
-            mf.mf_data[nav_date].one_year_ret = round(
-                (((nav_today / nav_one_year_ago) ** (1 / 1)) - 1) * 100, 4)
+            mf.mf_data[nav_date].one_year_ret = \
+                calculate_cagr(mf.code,
+                               nav_date,
+                               nav_today,
+                               nav_one_year_ago,
+                               1)
 
             mf_data_three_year_ago = \
                 mf.mf_data.get(nav_date - datetime.timedelta(days=1095))
             if mf_data_three_year_ago is None:
                 continue
             nav_three_year_ago = mf_data_three_year_ago.nav
-            mf.mf_data[nav_date].three_year_ret = round(
-                (((nav_today / nav_three_year_ago) ** (1 / 3)) - 1) * 100, 4)
+            mf.mf_data[nav_date].three_year_ret = \
+                calculate_cagr(mf.code,
+                               nav_date,
+                               nav_today,
+                               nav_three_year_ago,
+                               3)
 
             mf_data_five_year_ago = \
                 mf.mf_data.get(nav_date - datetime.timedelta(days=1825))
             if mf_data_five_year_ago is None:
                 continue
             nav_five_year_ago = mf_data_five_year_ago.nav
-            mf.mf_data[nav_date].five_year_ret = round(
-                (((nav_today / nav_five_year_ago) ** (1 / 5)) - 1) * 100, 4)
+            mf.mf_data[nav_date].five_year_ret = \
+                calculate_cagr(mf.code,
+                               nav_date,
+                               nav_today,
+                               nav_five_year_ago,
+                               5)
 
         #print("Calculated rolling returns for " + str(mf.code))
 
-    print("Calculated rolling returns for " + str(len(mutual_funds)) + " mutual funds")
+    print("Calculated rolling returns for " + str(len(mutual_funds)) + \
+          " mutual funds")
     return mutual_funds
 
 
