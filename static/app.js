@@ -134,8 +134,7 @@ function addChart(mfCode, csvData) {
       // add nav value if available
       if (mfVal[0] !== undefined && mfVal[0].length > 0) {
         navDataset.data.push(mfVal[0]);
-      }
-      else {
+      } else {
         navDataset.data.push(null);
       }
       // add three years return if available
@@ -155,6 +154,7 @@ function addChart(mfCode, csvData) {
 
   console.log("Total datasets " + navConfig.data.datasets.length);
   navChart.update();
+  addButton(mfCode);
 }
 
 function removeChart(mfCode) {
@@ -172,20 +172,23 @@ function removeChart(mfCode) {
   navChart.update();
 }
 
-function addNav(mfCode, mfLabel) {
+function addButton(mfCode) {
+  if (document.getElementById("btn" + mfCode) != null) {
+    // button exists
+    return;
+  }
+
   var btn = document.createElement("button");
-  var txt = document.createTextNode(mfCode + " - " + mfLabel);
+  var txt = document.createTextNode(mfCode + " - " + getNavLabel(mfCode));
 
   btn.appendChild(txt);
-  btn.setAttribute("id", "btn" + mfLabel);
+  btn.setAttribute("id", "btn" + mfCode);
 
   // bootstrap css
   btn.setAttribute("class", "btn btn-default btn-block");
   btn.setAttribute("style", "white-space: normal; margin-top: 1em;");
 
   document.getElementById("divNavList").appendChild(btn);
-
-  getChart(mfCode);
 
   btn.addEventListener("click", function() {
     removeChart(mfCode);
@@ -215,7 +218,7 @@ function navAutocompleteCb(ui) {
     }
   }
 
-  addNav(ui.item.mfcode, ui.item.label);
+  getChart(ui.item.mfcode);
 }
 
 function navDateChangeCb() {
@@ -329,11 +332,11 @@ $(function() {
     },
     options: {
       title: {
-        display: true,
-        text: "NAV Chart"
+        display: false,
       },
       legend: {
-        position: "right"
+        display: true,
+        position: "top"
       },
       scales: {
         yAxes: [{
@@ -367,9 +370,9 @@ $(function() {
 
   navChart = new Chart(document.getElementById("canvasNavChart"), navConfig);
 
-  addNav("113177", getNavLabel("113177"));
-  addNav("130502", getNavLabel("130502"));
-  addNav("125494", getNavLabel("125494"));
+  getChart("113177");
+  getChart("130502");
+  getChart("125494");
 
   // Serialize URL
   // https://gka.github.io/palettes/
