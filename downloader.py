@@ -17,6 +17,12 @@ def get_first_day():
 def get_last_month_last_day():
   return datetime.date.today().replace(day=1) - datetime.timedelta(days=1)
 
+
+def print_mf(mf):
+    for date in mf.mf_data:
+        print(str(mf.code) + " " + str(date) + " " + str(mf.mf_data[date].nav))
+
+
 def download_raw_nav(overwrite=False,
                      start_date=get_first_day(),
                      end_date=get_last_month_last_day(),
@@ -95,8 +101,6 @@ def read_all_mf(start_date=get_first_day(),
                         print("Nav: " + str(e))
                         print(matches.group(0))
                         continue
-                    if nav == 0:
-                        continue
                     try:
                         year = int(matches.group(8))
                     except ValueError as e:
@@ -117,6 +121,13 @@ def read_all_mf(start_date=get_first_day(),
                         continue
                     date = datetime.date(year, month, day);
 
+                    if nav == 0:
+                        continue
+
+                    if nav < 0:
+                        print("Dropping " + str(code) + " " + str(date) + " " + str(nav))
+                        continue
+
                     if mutual_funds.get(code) is None:
                         mutual_funds[code] = \
                             mutualfund.MutualFund(
@@ -128,8 +139,7 @@ def read_all_mf(start_date=get_first_day(),
                         mutual_funds[code].mf_data[date] = \
                             mutualfund.MFData(nav=nav)
 
-                    if code == "108795":
-                        print(eval(repr(mutual_funds[code])))
+                    #print(eval(repr(mutual_funds[code])))
 
         #print("Processed " + file_name)
         # increment to next month

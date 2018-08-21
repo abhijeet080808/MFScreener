@@ -1,18 +1,34 @@
 "use strict";
 
-function getChartColor(index) {
+function getChartColor() {
   // https://gka.github.io/chroma.js/
   // https://codepen.io/stevepepple/post/color-scales-for-charts-and-maps
+  // https://jiffyclub.github.io/palettable/colorbrewer/qualitative/
   if (chartColors === undefined) {
     chartColors =
       chroma.
-      scale("Accent").
-      //scale("Set3").
+      //scale("Accent").
+      //scale("Set1").
+      scale("Dark2").
       mode("lch").
+      //mode("hsl").
       colors(maxCharts);
   }
 
-  return chartColors[index];
+  for (var  i = 0; i < chartColors.length; i++) {
+    var colorAlreadyUsed = false
+    for (var j = 0; j < navConfig.data.datasets.length; j++) {
+      if (chartColors[i] == navConfig.data.datasets[j].backgroundColor) {
+        colorAlreadyUsed = true;
+        break;
+      }
+    }
+    if (!colorAlreadyUsed) {
+      return chartColors[i];
+    }
+  }
+
+  return chroma("black");
 
   //var h = Math.floor(Math.random() * 255);
   //var s = (Math.floor(Math.random() * 40) + 30) + "%";
@@ -77,7 +93,7 @@ function addChart(mfCode, csvData) {
   console.log("Adding chart " + mfCode);
 
   var mfValues = readCsv(csvData);
-  var color = getChartColor(navConfig.data.datasets.length / 2);
+  var color = getChartColor();
 
   // https://www.chartjs.org/docs/latest/charts/line.html
   // https://stackoverflow.com/questions/38085352/
