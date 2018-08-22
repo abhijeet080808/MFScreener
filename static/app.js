@@ -212,7 +212,8 @@ function addButton(mfCode, textColor) {
   // bootstrap css
   btn.setAttribute("class", "btn btn-default btn-block");
   btn.setAttribute("style", "white-space: normal; margin-top: 1em; " +
-                            "font-weight: bolder; color: " + textColor);
+                            "font-weight: bolder !important; " +
+                            "color: " + textColor);
 
   document.getElementById("divNavList").appendChild(btn);
 
@@ -317,9 +318,26 @@ var chartColors;
 $(function() {
   // https://jqueryui.com/autocomplete/
   $("#inputNavSearch").autocomplete({
-    source: mf_codes,
-    delay: 300,
-    minLength: 3,
+    //source: mf_codes,
+    //delay: 300,
+    //minLength: 2,
+    source: function(request, response) {
+      var terms = request.term.split(" ");
+      var results = [];
+      // use each term to narrow down the results
+      for (var i = 0; i < terms.length; i++) {
+        if (terms[i].length > 0) {
+          if (results.length == 0) {
+            results = $.ui.autocomplete.filter(mf_codes, terms[i]);
+          } else {
+            results = $.ui.autocomplete.filter(results, terms[i]);
+          }
+        }
+      }
+      // pick only top 50 results to avoid slowing down the browser
+      // delegate back to autocomplete
+      response(results.slice(0, 50));
+    },
     select: function(event, ui) {
       navAutocompleteCb(ui);
       this.value = "";
