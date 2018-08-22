@@ -18,7 +18,7 @@ function getChartColor() {
   for (var  i = 0; i < chartColors.length; i++) {
     var colorAlreadyUsed = false
     for (var j = 0; j < navConfig.data.datasets.length; j++) {
-      if (chartColors[i] == navConfig.data.datasets[j].backgroundColor) {
+      if (chartColors[i] == navConfig.data.datasets[j].mfColor) {
         colorAlreadyUsed = true;
         break;
       }
@@ -29,11 +29,6 @@ function getChartColor() {
   }
 
   return chroma("black");
-
-  //var h = Math.floor(Math.random() * 255);
-  //var s = (Math.floor(Math.random() * 40) + 30) + "%";
-  //var l = (Math.floor(Math.random() * 20) + 50) + "%";
-  //return "hsl(" + h + "," + s + "," + l + ")";
 }
 
 function addLabels(startDate, endDate, periodicity) {
@@ -50,11 +45,11 @@ function addLabels(startDate, endDate, periodicity) {
   }
 }
 
-function getChart(mfCode) {
-  readTextFile(mfCode, "/static/csv/" + mfCode + ".csv");
+function getChart(mfCode, hiddenYAxes) {
+  readTextFile(mfCode, "/static/csv/" + mfCode + ".csv", hiddenYAxes);
 }
 
-function readTextFile(mfCode, url) {
+function readTextFile(mfCode, url, hiddenYAxes) {
   // read text from URL location
   console.log("Reading " + url);
   var req = new XMLHttpRequest();
@@ -64,7 +59,7 @@ function readTextFile(mfCode, url) {
   req.onreadystatechange = function() {
     // file is downloaded
     if (req.readyState === XMLHttpRequest.DONE) {
-      addChart(mfCode, req.responseText);
+      addChart(mfCode, req.responseText, hiddenYAxes);
     }
   }
 }
@@ -89,11 +84,21 @@ function readCsv(csvData) {
   return mfValues;
 }
 
-function addChart(mfCode, csvData) {
+function addChart(mfCode, csvData, hiddenYAxes) {
   console.log("Adding chart " + mfCode);
 
   var mfValues = readCsv(csvData);
-  var color = getChartColor();
+  var hexColor = getChartColor();
+  var color1 = "rgba(" +
+               chroma(hexColor).get('rgb.r') + "," +
+               chroma(hexColor).get('rgb.g') + "," +
+               chroma(hexColor).get('rgb.b') + "," +
+               "0.2)";
+  var color2 = "rgba(" +
+               chroma(hexColor).get('rgb.r') + "," +
+               chroma(hexColor).get('rgb.g') + "," +
+               chroma(hexColor).get('rgb.b') + "," +
+               "0.6)";
 
   // https://www.chartjs.org/docs/latest/charts/line.html
   // https://stackoverflow.com/questions/38085352/
@@ -102,27 +107,47 @@ function addChart(mfCode, csvData) {
     label: "NAV - " + mfCode,
     data: [],
     yAxisID: "NAV",
-    backgroundColor: color,
-    borderColor: color,
+    backgroundColor: color1,
+    borderColor: color1,
     borderWidth: 2,
+    //borderDash: [2, 2],
     fill: false,
     pointRadius: 0,
+    // tooltip sensitivity
     pointHitRadius: 5,
-    mfCode: mfCode
+    // custom data
+    mfCode: mfCode,
+    mfColor: hexColor
   }
 
   var threeYrRetDataset = {
     label: "3 Yr Ret - " + mfCode,
     data: [],
     yAxisID: "THREE_YR_RET",
-    backgroundColor: color,
-    borderColor: color,
+    backgroundColor: color2,
+    borderColor: color2,
     borderWidth: 2,
-    borderDash: [2, 2],
+    //borderDash: [2, 2],
     fill: false,
     pointRadius: 0,
+    // tooltip sensitivity
     pointHitRadius: 5,
-    mfCode: mfCode
+    mfCode: mfCode,
+    mfColor: hexColor
+  }
+
+  for (var i = 0; i < hiddenYAxes.length; i++) {
+    if (hiddenYAxes[i] == navDataset.yAxisID) {
+      navDataset.hidden = true;
+    } else {
+      navDataset.hidden = false;
+    }
+
+    if (hiddenYAxes[i] == threeYrRetDataset.yAxisID) {
+      threeYrRetDataset.hidden = true;
+    } else {
+      threeYrRetDataset.hidden = false;
+    }
   }
 
   // get values for the relevant time markers
@@ -207,18 +232,22 @@ function getNavLabel(mfCode) {
 }
 
 function navAutocompleteCb(ui) {
-  if (navConfig.data.datasets.length >= maxCharts) {
+  if (navConfig.data.datasets.length >= (maxCharts * 2)) {
     return;
   }
 
+  var currHiddenMfCodes = {};
   for (var i = 0; i < navConfig.data.datasets.length; i++) {
     if (navConfig.data.datasets[i].mfCode == ui.item.mfcode) {
       // element already exists
       return;
     }
+
+    // keep current hidden status even after adding a new chart
+    navConfig.data.datasets[i].hidden = !navChart.isDatasetVisible(i);
   }
 
-  getChart(ui.item.mfcode);
+  getChart(ui.item.mfcode, []);
 }
 
 function navDateChangeCb() {
@@ -230,10 +259,20 @@ function navDateChangeCb() {
   }
 
   var currMfCodes = [];
+  // mf code vs array of y axis ids
+  var currHiddenMfCodes = {};
   for (var i = 0; i < navConfig.data.datasets.length; i++) {
     var mfCode = navConfig.data.datasets[i].mfCode;
     if (currMfCodes.includes(mfCode) === false) {
       currMfCodes.push(mfCode);
+    }
+
+    if (currHiddenMfCodes[mfCode] === undefined) {
+      currHiddenMfCodes[mfCode] = [];
+    }
+
+    if (navChart.isDatasetVisible(i) === false) {
+      currHiddenMfCodes[mfCode].push(navConfig.data.datasets[i].yAxisID);
     }
   }
 
@@ -243,7 +282,7 @@ function navDateChangeCb() {
   addLabels(startDate, endDate, getPeriodicity(startDate, endDate));
 
   for (var i = 0; i < currMfCodes.length; i++) {
-    getChart(currMfCodes[i]);
+    getChart(currMfCodes[i], currHiddenMfCodes[currMfCodes[i]]);
   }
 }
 
@@ -338,6 +377,9 @@ $(function() {
         display: true,
         position: "top"
       },
+      tooltips: {
+        mode: 'index'
+      },
       scales: {
         yAxes: [{
           id: "NAV",
@@ -370,9 +412,10 @@ $(function() {
 
   navChart = new Chart(document.getElementById("canvasNavChart"), navConfig);
 
-  getChart("113177");
-  getChart("130502");
-  getChart("125494");
+  getChart("113177", []);
+  getChart("130502", []);
+  getChart("125494", []);
+  getChart("100822", []);
 
   // Serialize URL
   // https://gka.github.io/palettes/
