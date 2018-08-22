@@ -7,7 +7,7 @@ import mutualfund
 import os.path
 import re
 import requests
-
+import statistics
 
 def get_first_day():
   # AMFI India does not have data before this date
@@ -125,7 +125,8 @@ def read_all_mf(start_date=get_first_day(),
                         continue
 
                     if nav < 0:
-                        print("Dropping " + str(code) + " " + str(date) + " " + str(nav))
+                        print("Dropping " + str(code) + " " + \
+                              str(date) + " " + str(nav))
                         continue
 
                     if mutual_funds.get(code) is None:
@@ -175,70 +176,75 @@ def fill_missing_data(mutual_funds,
     return mutual_funds
 
 
-def calculate_cagr(mf_code, date, nav_present, nav_past, years):
+def calculate_cagr(mf, date, years):
 
     # return = (final_value - initial_value) / initial_value x 100
     # cagr = ((final_value / initial_value)^(1 / number of periods) - 1) x 100
 
-    try:
-        return round(
-            (math.pow((nav_present / nav_past), (1 / years)) - 1) * 100, 4)
-    except ValueError as e:
-        print("Error: " + \
-              " mf_code " + str(mf_code) + \
-              " date " + str(date) + \
-              " nav_present " + str(nav_present) + \
-              " nav_past " + str(nav_past) + \
-              " years " + str(years))
-        raise
+    nav_today = mf.mf_data[date].nav
+
+    mf_data_past = \
+        mf.mf_data.get(date - datetime.timedelta(days=(365*years)))
+
+    if mf_data_past is None:
+      return None
+
+    nav_past = mf_data_past.nav
+
+    return round(
+        (math.pow((nav_today / nav_past), (1 / years)) - 1) * 100, 4)
 
 
-def add_rolling_returns(mutual_funds):
+def calculate_average(mf, date, years):
+
+    navs = []
+
+    start_date = date - datetime.timedelta(days=(365*years))
+    end_date = date
+
+    curr_date = start_date
+    while curr_date <= end_date:
+        if mf.mf_data.get(curr_date) is None:
+          return None
+
+        navs.append(mf.mf_data.get(curr_date).nav)
+        curr_date = curr_date + datetime.timedelta(days=1)
+
+    return statistics.mean(navs)
+
+
+#def calculate_std_deviation(years):
+
+    # Standard Deviation (SD) = Square root of Variance (V)
+    # Variance = squared difference between each monthly return +
+    #            mean / number of monthly return data – 1
+
+
+def add_statistics(mutual_funds):
 
     for mf in mutual_funds.values():
-
         for nav_date in mf.mf_data:
-            nav_today = mf.mf_data[nav_date].nav
-
-            mf_data_one_year_ago = \
-                mf.mf_data.get(nav_date - datetime.timedelta(days=365))
-            if mf_data_one_year_ago is None:
-                continue
-            nav_one_year_ago = mf_data_one_year_ago.nav
             mf.mf_data[nav_date].one_year_ret = \
-                calculate_cagr(mf.code,
-                               nav_date,
-                               nav_today,
-                               nav_one_year_ago,
-                               1)
+                calculate_cagr(mf, nav_date, 1)
 
-            mf_data_three_year_ago = \
-                mf.mf_data.get(nav_date - datetime.timedelta(days=1095))
-            if mf_data_three_year_ago is None:
-                continue
-            nav_three_year_ago = mf_data_three_year_ago.nav
             mf.mf_data[nav_date].three_year_ret = \
-                calculate_cagr(mf.code,
-                               nav_date,
-                               nav_today,
-                               nav_three_year_ago,
-                               3)
+                calculate_cagr(mf, nav_date, 3)
 
-            mf_data_five_year_ago = \
-                mf.mf_data.get(nav_date - datetime.timedelta(days=1825))
-            if mf_data_five_year_ago is None:
-                continue
-            nav_five_year_ago = mf_data_five_year_ago.nav
             mf.mf_data[nav_date].five_year_ret = \
-                calculate_cagr(mf.code,
-                               nav_date,
-                               nav_today,
-                               nav_five_year_ago,
-                               5)
+                calculate_cagr(mf, nav_date, 5)
 
-        #print("Calculated rolling returns for " + str(mf.code))
+            mf.mf_data[nav_date].one_year_avg = \
+                calculate_average(mf, nav_date, 1)
 
-    print("Calculated rolling returns for " + str(len(mutual_funds)) + \
+            mf.mf_data[nav_date].three_year_avg = \
+                calculate_average(mf, nav_date, 3)
+
+            mf.mf_data[nav_date].five_year_avg = \
+                calculate_average(mf, nav_date, 5)
+
+        #print("Calculated statistics for " + str(mf.code))
+
+    print("Calculated statistics for " + str(len(mutual_funds)) + \
           " mutual funds")
     return mutual_funds
 
@@ -258,7 +264,10 @@ def write_mf_nav_to_csv(mutual_funds, directory="static/csv"):
                                  mf.mf_data[nav_date].nav,
                                  mf.mf_data[nav_date].one_year_ret,
                                  mf.mf_data[nav_date].three_year_ret,
-                                 mf.mf_data[nav_date].five_year_ret])
+                                 mf.mf_data[nav_date].five_year_ret,
+                                 mf.mf_data[nav_date].one_year_avg,
+                                 mf.mf_data[nav_date].three_year_avg,
+                                 mf.mf_data[nav_date].five_year_avg])
 
         #print("Wrote " + file_name)
 
@@ -288,7 +297,7 @@ def main():
     download_raw_nav()
     mutual_funds = read_all_mf()
     mutual_funds = fill_missing_data(mutual_funds)
-    mutual_funds = add_rolling_returns(mutual_funds)
+    mutual_funds = add_statistics(mutual_funds)
     write_mf_nav_to_csv(mutual_funds)
     write_mf_lookup_to_csv(mutual_funds)
 
