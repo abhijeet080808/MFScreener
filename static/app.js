@@ -179,7 +179,7 @@ function addChart(mfCode, csvData, hiddenYAxes) {
 
   console.log("Total datasets " + navConfig.data.datasets.length);
   navChart.update();
-  addButton(mfCode);
+  addButton(mfCode, hexColor);
 }
 
 function removeChart(mfCode) {
@@ -197,7 +197,7 @@ function removeChart(mfCode) {
   navChart.update();
 }
 
-function addButton(mfCode) {
+function addButton(mfCode, textColor) {
   if (document.getElementById("btn" + mfCode) != null) {
     // button exists
     return;
@@ -211,7 +211,8 @@ function addButton(mfCode) {
 
   // bootstrap css
   btn.setAttribute("class", "btn btn-default btn-block");
-  btn.setAttribute("style", "white-space: normal; margin-top: 1em;");
+  btn.setAttribute("style", "white-space: normal; margin-top: 1em; " +
+                            "font-weight: bolder; color: " + textColor);
 
   document.getElementById("divNavList").appendChild(btn);
 
