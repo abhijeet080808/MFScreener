@@ -5,9 +5,11 @@ import datetime
 import math
 import mutualfund
 import os.path
+import progressbar # pip3 install progressbar2
 import re
 import requests
 import statistics
+
 
 def get_first_day():
   # AMFI India does not have data before this date
@@ -28,6 +30,8 @@ def download_raw_nav(overwrite=False,
                      end_date=get_last_month_last_day(),
                      directory="nav"):
 
+    print("Downloading mutual fund files")
+
     # http://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx?
     # frmdt=01-Jan-2008&todt=31-Jan-2008
     url = "http://portal.amfiindia.com/DownloadNAVHistoryReport_Po.aspx?"
@@ -36,7 +40,12 @@ def download_raw_nav(overwrite=False,
         os.makedirs(directory)
 
     curr_date = start_date
+    span_days = (end_date - curr_date).days
+    bar = progressbar.ProgressBar(max_value=span_days, redirect_stdout=True)
+
     while curr_date <= end_date:
+        bar.update(span_days - (end_date - curr_date).days)
+
         start = curr_date
         # increment to next month
         curr_date = datetime.date(curr_date.year + int(curr_date.month / 12),
@@ -52,13 +61,18 @@ def download_raw_nav(overwrite=False,
             r = requests.get(file_url, stream = True)
             open(file_name, "w").write(r.content)
             print("Downloaded " + file_name)
-        else:
-            print("Skipped downloading " + file_name)
+        #else:
+        #    print("Skipped downloading " + file_name)
+
+    bar.finish()
+    print("Downloaded all mutual fund files")
 
 
 def read_all_mf(start_date=get_first_day(),
                 end_date=get_last_month_last_day(),
                 directory="nav"):
+
+    print("Reading mutual fund files")
 
     MONTHS = { "Jan" : 1, "Feb" : 2, "Mar" : 3, "Apr" : 4,
                "May" : 5, "Jun" : 6, "Jul" : 7, "Aug" : 8,
@@ -68,7 +82,12 @@ def read_all_mf(start_date=get_first_day(),
     mutual_funds = dict()
 
     curr_date = start_date
+    span_days = (end_date - curr_date).days
+    bar = progressbar.ProgressBar(max_value=span_days, redirect_stdout=True)
+
     while curr_date <= end_date:
+        bar.update(span_days - (end_date - curr_date).days)
+
         file_name = os.path.join(directory, "Nav-" + \
                     curr_date.strftime("%Y-%m") + ".txt")
 
@@ -147,7 +166,8 @@ def read_all_mf(start_date=get_first_day(),
         curr_date = datetime.date(curr_date.year + int(curr_date.month / 12),
                                   ((curr_date.month % 12) + 1), 1)
 
-    print("Processed " + str(len(mutual_funds)) + " mutual funds")
+    bar.finish()
+    print("Read " + str(len(mutual_funds)) + " mutual fund files")
     return mutual_funds
 
 
@@ -155,7 +175,15 @@ def fill_missing_data(mutual_funds,
                       start_date=get_first_day(),
                       end_date=get_last_month_last_day()):
 
+    print("Cleaning up mutual funds data")
+
+    i = 0
+    bar = progressbar.ProgressBar(max_value=len(mutual_funds), redirect_stdout=True)
+
     for mf in mutual_funds.values():
+        bar.update(i)
+        i += 1
+
         curr_date = start_date
 
         first_date = min(mf.mf_data.keys())
@@ -172,6 +200,7 @@ def fill_missing_data(mutual_funds,
 
         #print("Cleaned " + str(mf.code))
 
+    bar.finish()
     print("Cleaned up " + str(len(mutual_funds)) + " mutual funds")
     return mutual_funds
 
@@ -184,7 +213,7 @@ def calculate_cagr(mf, date, years):
     nav_today = mf.mf_data[date].nav
 
     mf_data_past = \
-        mf.mf_data.get(date - datetime.timedelta(days=(365*years)))
+        mf.mf_data.get(date - datetime.timedelta(days=((365 * years) - 1)))
 
     if mf_data_past is None:
       return None
@@ -193,24 +222,6 @@ def calculate_cagr(mf, date, years):
 
     return round(
         (math.pow((nav_today / nav_past), (1 / years)) - 1) * 100, 4)
-
-
-def calculate_average(mf, date, years):
-
-    navs = []
-
-    start_date = date - datetime.timedelta(days=(365*years))
-    end_date = date
-
-    curr_date = start_date
-    while curr_date <= end_date:
-        if mf.mf_data.get(curr_date) is None:
-          return None
-
-        navs.append(mf.mf_data.get(curr_date).nav)
-        curr_date = curr_date + datetime.timedelta(days=1)
-
-    return statistics.mean(navs)
 
 
 #def calculate_std_deviation(years):
@@ -222,8 +233,24 @@ def calculate_average(mf, date, years):
 
 def add_statistics(mutual_funds):
 
+    print("Adding statistics for mutual funds")
+
+    i = 0
+    bar = progressbar.ProgressBar(max_value=len(mutual_funds), redirect_stdout=True)
+
     for mf in mutual_funds.values():
-        for nav_date in mf.mf_data:
+        bar.update(i)
+        i += 1
+
+        total_nav_one_yr = 0.0
+        total_nav_three_yr = 0.0
+        total_nav_five_yr = 0.0
+
+        num_nav_one_yr = 0
+        num_nav_three_yr = 0
+        num_nav_five_yr = 0
+
+        for nav_date in sorted(mf.mf_data.keys()):
             mf.mf_data[nav_date].one_year_ret = \
                 calculate_cagr(mf, nav_date, 1)
 
@@ -233,28 +260,52 @@ def add_statistics(mutual_funds):
             mf.mf_data[nav_date].five_year_ret = \
                 calculate_cagr(mf, nav_date, 5)
 
-            mf.mf_data[nav_date].one_year_avg = \
-                calculate_average(mf, nav_date, 1)
+            total_nav_one_yr += mf.mf_data[nav_date].nav
+            num_nav_one_yr += 1
 
-            mf.mf_data[nav_date].three_year_avg = \
-                calculate_average(mf, nav_date, 3)
+            total_nav_three_yr += mf.mf_data[nav_date].nav
+            num_nav_three_yr += 1
 
-            mf.mf_data[nav_date].five_year_avg = \
-                calculate_average(mf, nav_date, 5)
+            total_nav_five_yr += mf.mf_data[nav_date].nav
+            num_nav_five_yr += 1
+
+            if num_nav_one_yr == 365:
+                mf.mf_data[nav_date].one_year_avg = round(total_nav_one_yr / 365, 4)
+                total_nav_one_yr -= mf.mf_data[nav_date - datetime.timedelta(days=364)].nav
+                num_nav_one_yr -= 1
+
+            if num_nav_three_yr == 1095:
+                mf.mf_data[nav_date].three_year_avg = round(total_nav_three_yr / 1095, 4)
+                total_nav_three_yr -= mf.mf_data[nav_date - datetime.timedelta(days=1094)].nav
+                num_nav_three_yr -= 1
+
+            if num_nav_five_yr == 1825:
+                mf.mf_data[nav_date].five_year_avg = round(total_nav_five_yr / 1825, 4)
+                total_nav_five_yr -= mf.mf_data[nav_date - datetime.timedelta(days=1824)].nav
+                num_nav_five_yr -= 1
 
         #print("Calculated statistics for " + str(mf.code))
 
-    print("Calculated statistics for " + str(len(mutual_funds)) + \
+    bar.finish()
+    print("Added statistics for " + str(len(mutual_funds)) + \
           " mutual funds")
     return mutual_funds
 
 
 def write_mf_nav_to_csv(mutual_funds, directory="static/csv"):
 
+    print("Writing mutual funds to CSVs")
+
     if not os.path.exists(directory):
         os.makedirs(directory)
 
+    i = 0
+    bar = progressbar.ProgressBar(max_value=len(mutual_funds), redirect_stdout=True)
+
     for mf in mutual_funds.values():
+        bar.update(i)
+        i += 1
+
         file_name = os.path.join(directory, str(mf.code) + ".csv")
         with open(file_name, "w") as f:
             writer = csv.writer(f)
@@ -271,6 +322,7 @@ def write_mf_nav_to_csv(mutual_funds, directory="static/csv"):
 
         #print("Wrote " + file_name)
 
+    bar.finish()
     print("Wrote CSVs for " + str(len(mutual_funds)) + " mutual funds")
 
 
@@ -291,8 +343,11 @@ def write_mf_lookup_to_csv(mutual_funds, directory="static/csv"):
 
 
 def main():
+
     print("Start Date: " + str(get_first_day()))
     print("End Date: " + str(get_last_month_last_day()))
+
+    start_time = datetime.datetime.now()
 
     download_raw_nav()
     mutual_funds = read_all_mf()
@@ -300,6 +355,9 @@ def main():
     mutual_funds = add_statistics(mutual_funds)
     write_mf_nav_to_csv(mutual_funds)
     write_mf_lookup_to_csv(mutual_funds)
+
+    print("Time taken " + str(datetime.datetime.now() - start_time))
+
 
 if __name__== "__main__":
     main()
