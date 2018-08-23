@@ -93,8 +93,10 @@ def read_all_mf(start_date=get_first_day(),
 
         with open(file_name, "r") as f:
             for line in f:
-                # Scheme Code;Scheme Name;Net Asset Value;Repurchase Price;Sale Price;Date
-                matches = re.match("^(\d+);(.+);(.+);(.*);(.*);(\d+)-(.+)-(\d+).*$", line)
+                # Scheme Code;Scheme Name;Net Asset Value;
+                # Repurchase Price;Sale Price;Date
+                matches = re.match("^(\d+);(.+);(.+);" + \
+                                   "(.*);(.*);(\d+)-(.+)-(\d+).*$", line)
                 if (matches):
                     try:
                         code = int(matches.group(1))
@@ -178,7 +180,8 @@ def fill_missing_data(mutual_funds,
     print("Cleaning up mutual funds data")
 
     i = 0
-    bar = progressbar.ProgressBar(max_value=len(mutual_funds), redirect_stdout=True)
+    bar = progressbar.ProgressBar(max_value=len(mutual_funds),
+                                  redirect_stdout=True)
 
     for mf in mutual_funds.values():
         bar.update(i)
@@ -236,7 +239,8 @@ def add_statistics(mutual_funds):
     print("Adding statistics for mutual funds")
 
     i = 0
-    bar = progressbar.ProgressBar(max_value=len(mutual_funds), redirect_stdout=True)
+    bar = progressbar.ProgressBar(max_value=len(mutual_funds),
+                                  redirect_stdout=True)
 
     for mf in mutual_funds.values():
         bar.update(i)
@@ -270,18 +274,24 @@ def add_statistics(mutual_funds):
             num_nav_five_yr += 1
 
             if num_nav_one_yr == 365:
-                mf.mf_data[nav_date].one_year_avg = round(total_nav_one_yr / 365, 4)
-                total_nav_one_yr -= mf.mf_data[nav_date - datetime.timedelta(days=364)].nav
+                mf.mf_data[nav_date].one_year_avg = \
+                    round(total_nav_one_yr / 365, 4)
+                total_nav_one_yr -= \
+                    mf.mf_data[nav_date - datetime.timedelta(days=364)].nav
                 num_nav_one_yr -= 1
 
             if num_nav_three_yr == 1095:
-                mf.mf_data[nav_date].three_year_avg = round(total_nav_three_yr / 1095, 4)
-                total_nav_three_yr -= mf.mf_data[nav_date - datetime.timedelta(days=1094)].nav
+                mf.mf_data[nav_date].three_year_avg = \
+                    round(total_nav_three_yr / 1095, 4)
+                total_nav_three_yr -= \
+                    mf.mf_data[nav_date - datetime.timedelta(days=1094)].nav
                 num_nav_three_yr -= 1
 
             if num_nav_five_yr == 1825:
-                mf.mf_data[nav_date].five_year_avg = round(total_nav_five_yr / 1825, 4)
-                total_nav_five_yr -= mf.mf_data[nav_date - datetime.timedelta(days=1824)].nav
+                mf.mf_data[nav_date].five_year_avg = \
+                    round(total_nav_five_yr / 1825, 4)
+                total_nav_five_yr -= \
+                    mf.mf_data[nav_date - datetime.timedelta(days=1824)].nav
                 num_nav_five_yr -= 1
 
         #print("Calculated statistics for " + str(mf.code))
@@ -300,7 +310,8 @@ def write_mf_nav_to_csv(mutual_funds, directory="static/csv"):
         os.makedirs(directory)
 
     i = 0
-    bar = progressbar.ProgressBar(max_value=len(mutual_funds), redirect_stdout=True)
+    bar = progressbar.ProgressBar(max_value=len(mutual_funds),
+                                  redirect_stdout=True)
 
     for mf in mutual_funds.values():
         bar.update(i)
