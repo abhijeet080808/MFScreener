@@ -3,12 +3,34 @@
 import csv
 import datetime
 import math
+import mongoengine
 import mutualfund
 import os.path
 import progressbar # pip3 install progressbar2
 import re
 import requests
 import statistics
+
+
+# ------------------------------------------------------------------- #
+
+class MutualFundData(mongoengine.EmbeddedDocument):
+    nav = mongoengine.FloatField(required=True)
+    one_year_ret = mongoengine.FloatField(required=True)
+    three_year_ret = mongoengine.FloatField(required=True)
+    five_year_ret = mongoengine.FloatField(required=True)
+    one_year_avg = mongoengine.FloatField(required=True)
+    three_year_avg = mongoengine.FloatField(required=True)
+    five_year_avg = mongoengine.FloatField(required=True)
+
+class MutualFund(mongoengine.Document):
+    code = mongoengine.IntField(required=True, unique=True, primary_key=True)
+    names = mongoengine.ListField(mongoengine.StringField(), required=True)
+    # key is string storing date in format "YYYY-MM-DD"
+    mf_data = mongoengine.MapField(
+        mongoengine.EmbeddedDocumentField(MutualFundData), required=True)
+
+# ------------------------------------------------------------------- #
 
 
 def get_first_day():
@@ -361,11 +383,12 @@ def main():
     start_time = datetime.datetime.now()
 
     download_raw_nav()
-    mutual_funds = read_all_mf()
-    mutual_funds = fill_missing_data(mutual_funds)
-    mutual_funds = add_statistics(mutual_funds)
-    write_mf_nav_to_csv(mutual_funds)
-    write_mf_lookup_to_csv(mutual_funds)
+    read_all_mf()
+    #mutual_funds = read_all_mf()
+    #mutual_funds = fill_missing_data(mutual_funds)
+    #mutual_funds = add_statistics(mutual_funds)
+    #write_mf_nav_to_csv(mutual_funds)
+    #write_mf_lookup_to_csv(mutual_funds)
 
     print("Time taken " + str(datetime.datetime.now() - start_time))
 
