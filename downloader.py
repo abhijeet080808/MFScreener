@@ -3,13 +3,34 @@
 import csv
 import datetime
 import math
+import mongoengine
 import mutualfund
 import os.path
 import progressbar # pip3 install progressbar2
-import pymongo
 import re
 import requests
 import statistics
+
+
+# ------------------------------------------------------------------- #
+
+class MutualFundData(mongoengine.EmbeddedDocument):
+    nav = mongoengine.FloatField(required=True)
+    one_year_ret = mongoengine.FloatField(required=True)
+    three_year_ret = mongoengine.FloatField(required=True)
+    five_year_ret = mongoengine.FloatField(required=True)
+    one_year_avg = mongoengine.FloatField(required=True)
+    three_year_avg = mongoengine.FloatField(required=True)
+    five_year_avg = mongoengine.FloatField(required=True)
+
+class MutualFund(mongoengine.Document):
+    code = mongoengine.IntField(required=True, unique=True, primary_key=True)
+    names = mongoengine.ListField(mongoengine.StringField(), required=True)
+    # key is string storing date in format "YYYY-MM-DD"
+    mf_data = mongoengine.MapField(
+        mongoengine.EmbeddedDocumentField(MutualFundData), required=True)
+
+# ------------------------------------------------------------------- #
 
 
 def get_first_day():
@@ -79,10 +100,8 @@ def read_all_mf(start_date=get_first_day(),
                "May" : 5, "Jun" : 6, "Jul" : 7, "Aug" : 8,
                "Sep" : 9, "Oct" : 10, "Nov" : 11, "Dec" : 12 }
 
-    db = pymongo.MongoClient().mfscreener
-    db.mutual_fund_info.create_index([("code", pymongo.ASCENDING)])
-    db.mutual_fund_nav.create_index([("code", pymongo.ASCENDING)])
-    #db.mutual_fund_nav.create_index([("date", pymongo.ASCENDING)])
+    # int (code) vs MutualFund
+    mutual_funds = dict()
 
     curr_date = start_date
     span_days = (end_date - curr_date).days
@@ -93,11 +112,6 @@ def read_all_mf(start_date=get_first_day(),
 
         file_name = os.path.join(directory, "Nav-" + \
                     curr_date.strftime("%Y-%m") + ".txt")
-
-        # mf code vs mf code and mf name
-        mutual_fund_infos = dict()
-        # mf code vs mf code, mf date and mf nav
-        mutual_fund_navs = dict()
 
         with open(file_name, "r") as f:
             for line in f:
@@ -158,13 +172,18 @@ def read_all_mf(start_date=get_first_day(),
                               str(date) + " " + str(nav))
                         continue
 
-                    mutual_fund_infos[code] = { "code": code, "name": name }
-                    mutual_fund_navs[str(code) + "-" + date.isoformat()] = \
-                        { "code": code, "date": date.isoformat(), "nav": nav }
+                    if mutual_funds.get(code) is None:
+                        mutual_funds[code] = \
+                            mutualfund.MutualFund(
+                                code,
+                                set([name]),
+                                dict([(date, mutualfund.MFData(nav=nav))]))
+                    else:
+                        mutual_funds[code].names.add(name)
+                        mutual_funds[code].mf_data[date] = \
+                            mutualfund.MFData(nav=nav)
 
-        #db.mutual_fund_info.insert_many(list(mutual_fund_infos.values()))
-        db.mutual_fund_nav.insert_many(list(mutual_fund_navs.values()))
-
+                    #print(eval(repr(mutual_funds[code])))
 
         #print("Processed " + file_name)
         # increment to next month
@@ -172,8 +191,8 @@ def read_all_mf(start_date=get_first_day(),
                                   ((curr_date.month % 12) + 1), 1)
 
     bar.finish()
-    #print("Read " + str(len(mutual_funds)) + " mutual fund files")
-    #return mutual_funds
+    print("Read " + str(len(mutual_funds)) + " mutual fund files")
+    return mutual_funds
 
 
 def fill_missing_data(mutual_funds,
