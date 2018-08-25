@@ -1,5 +1,5 @@
-# generated csv files
-static/csv
+# Executable
+downloader
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
