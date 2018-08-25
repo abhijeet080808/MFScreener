@@ -19,7 +19,10 @@ public:
       mFiveYrCagr(0),
       mOneYrAvg(0),
       mThreeYrAvg(0),
-      mFiveYrAvg(0)
+      mFiveYrAvg(0),
+      mOneYrStdDev(0),
+      mThreeYrStdDev(0),
+      mFiveYrStdDev(0)
   {
   }
 
@@ -31,6 +34,9 @@ public:
   double mOneYrAvg;
   double mThreeYrAvg;
   double mFiveYrAvg;
+  double mOneYrStdDev;
+  double mThreeYrStdDev;
+  double mFiveYrStdDev;
 };
 
 class MutualFund
@@ -285,6 +291,7 @@ void AddMissingDates(map<long, MutualFund>& mutualFunds)
 void CalculateStatistics(map<long, MutualFund>& mutualFunds)
 {
   // cagr = ((final_value / initial_value)^(1 / number of periods) - 1) x 100
+  // std_dev = ((sum of [(actual - mean)^2]) / N)^(1/2)
 
   cout << "Calculating statistics for " << mutualFunds.size()
        << " mutual funds" << endl;
@@ -321,6 +328,16 @@ void CalculateStatistics(map<long, MutualFund>& mutualFunds)
 
         dataKv.second.mOneYrAvg = one_year_rolling_total / 365.0f;
         one_year_rolling_total -= nav_one_yr_ago;
+
+        double squared_diff_total = 0;
+        for (boost::gregorian::date d = one_yr_ago;
+             d <= date_today;
+             d += boost::gregorian::date_duration(1))
+        {
+          squared_diff_total +=
+            pow(mfKv.second.mData.at(d).mNav - dataKv.second.mOneYrAvg, 2);
+        }
+        dataKv.second.mOneYrStdDev = pow(squared_diff_total / 365.0f, 0.5f);
       }
       else
       {
@@ -337,6 +354,16 @@ void CalculateStatistics(map<long, MutualFund>& mutualFunds)
 
         dataKv.second.mThreeYrAvg = three_year_rolling_total / 1095.0f;
         three_year_rolling_total -= nav_three_yr_ago;
+
+        double squared_diff_total = 0;
+        for (boost::gregorian::date d = three_yr_ago;
+             d <= date_today;
+             d += boost::gregorian::date_duration(1))
+        {
+          squared_diff_total +=
+            pow(mfKv.second.mData.at(d).mNav - dataKv.second.mThreeYrAvg, 2);
+        }
+        dataKv.second.mThreeYrStdDev = pow(squared_diff_total / 1095.0f, 0.5f);
       }
       else
       {
@@ -353,6 +380,16 @@ void CalculateStatistics(map<long, MutualFund>& mutualFunds)
 
         dataKv.second.mFiveYrAvg = five_year_rolling_total / 1825.0f;
         five_year_rolling_total -= nav_five_yr_ago;
+
+        double squared_diff_total = 0;
+        for (boost::gregorian::date d = five_yr_ago;
+             d <= date_today;
+             d += boost::gregorian::date_duration(1))
+        {
+          squared_diff_total +=
+            pow(mfKv.second.mData.at(d).mNav - dataKv.second.mFiveYrAvg, 2);
+        }
+        dataKv.second.mFiveYrStdDev = pow(squared_diff_total / 1825.0f, 0.5f);
       }
     }
   }
@@ -410,6 +447,24 @@ void WriteToCsv(map<long, MutualFund>& mutualFunds, const string& directory)
       if (dataKv.second.mFiveYrAvg != 0)
       {
         out << dataKv.second.mFiveYrAvg;
+      }
+      out << ",";
+
+      if (dataKv.second.mOneYrStdDev != 0)
+      {
+        out << dataKv.second.mOneYrStdDev;
+      }
+      out << ",";
+
+      if (dataKv.second.mThreeYrStdDev != 0)
+      {
+        out << dataKv.second.mThreeYrStdDev;
+      }
+      out << ",";
+
+      if (dataKv.second.mFiveYrStdDev != 0)
+      {
+        out << dataKv.second.mFiveYrStdDev;
       }
 
       out << endl;
