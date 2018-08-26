@@ -1,5 +1,6 @@
 #include <boost/date_time/gregorian/gregorian.hpp>
 
+#include <cassert>
 #include <dirent.h>
 #include <fstream>
 #include <iostream>
@@ -20,9 +21,9 @@ public:
       mOneYrAvg(0),
       mThreeYrAvg(0),
       mFiveYrAvg(0),
-      mOneYrStdDev(0),
-      mThreeYrStdDev(0),
-      mFiveYrStdDev(0)
+      mOneYrVarSum(0),
+      mThreeYrVarSum(0),
+      mFiveYrVarSum(0)
   {
   }
 
@@ -34,9 +35,11 @@ public:
   double mOneYrAvg;
   double mThreeYrAvg;
   double mFiveYrAvg;
-  double mOneYrStdDev;
-  double mThreeYrStdDev;
-  double mFiveYrStdDev;
+  // https://www.mathsisfun.com/data/standard-deviation.html
+  // std_dev = sqrt(var_sum/size)
+  double mOneYrVarSum;
+  double mThreeYrVarSum;
+  double mFiveYrVarSum;
 };
 
 class MutualFund
@@ -296,16 +299,87 @@ void AddMissingDates(map<long, MutualFund>& mutualFunds)
        << " and added " << added_navs << " NAVs" << endl;
 }
 
+unique_ptr<double>
+CalculateCagr(const map<boost::gregorian::date, MutualFundData>& mfData,
+              const boost::gregorian::date& presentDate,
+              int daysAgo)
+{
+  boost::gregorian::date old_date = presentDate -
+    boost::gregorian::date_duration(daysAgo);
+
+  if (mfData.find(old_date) != mfData.end())
+  {
+    double present_nav = mfData.at(presentDate).mNav;
+    double old_nav = mfData.at(old_date).mNav;
+    double cagr = (pow((present_nav / old_nav), 365.0f/daysAgo) - 1) * 100.0f;
+    return unique_ptr<double>(new double(cagr));
+  }
+  return nullptr;
+}
+
+tuple<bool, double, double>
+CalculateAverageAndVarianceSum(
+    const map<boost::gregorian::date, MutualFundData>& mfData,
+    const boost::gregorian::date& presentDate,
+    double& rollingNavTotal,
+    double& prevVarSum,
+    double& prevAverageNav,
+    int windowDays)
+{
+  boost::gregorian::date first_date = presentDate -
+    boost::gregorian::date_duration(windowDays - 1);
+
+  if (mfData.find(first_date) != mfData.end())
+  {
+    double first_nav = mfData.at(first_date).mNav;
+
+    double average_nav = rollingNavTotal / windowDays;
+
+    rollingNavTotal -= first_nav;
+
+    // first run
+    double var_sum;
+    if (prevVarSum == 0)
+    {
+      double squared_diff_total = 0;
+      boost::gregorian::date temp_date;
+      for (temp_date = first_date;
+           temp_date <= presentDate;
+           temp_date += boost::gregorian::date_duration(1))
+      {
+        squared_diff_total +=
+          pow(mfData.at(temp_date).mNav - average_nav, 2);
+      }
+      var_sum = squared_diff_total;
+    }
+    else
+    {
+      var_sum = prevVarSum +
+        ((mfData.at(presentDate).mNav -
+          mfData.at(first_date - boost::gregorian::date_duration(1)).mNav) *
+         (mfData.at(presentDate).mNav - average_nav +
+          mfData.at(first_date - boost::gregorian::date_duration(1)).mNav -
+          prevAverageNav));
+    }
+
+    prevAverageNav = average_nav;
+    prevVarSum = var_sum;
+
+    return make_tuple(true, var_sum, average_nav);
+  }
+
+  return make_tuple(false, 0, 0);
+}
+
+
 void CalculateStatistics(map<long, MutualFund>& mutualFunds)
 {
   // cagr = ((final_value / initial_value)^(1 / number of periods) - 1) x 100
   // std_dev = ((sum of [(actual - mean)^2]) / (N - 1))^(1/2)
   // http://jonisalonen.com/2014/efficient-and-accurate-rolling-standard-deviation/
-  // std_dev = std_dev +
-  //   (newest_val - oldest_val) *
-  //   (newest_val - new_avg + oldest_val - old_avg) /
-  //   (window_size - 1)
-
+  // variance_sum = prev_variance_sum +
+  //   (newest_val - oldest_val_just_outside_window) *
+  //   (newest_val - new_avg + oldest_val_just_outside_window - prev_avg)
 
   cout << "Calculating statistics for " << mutualFunds.size()
        << " mutual funds" << endl;
@@ -328,151 +402,64 @@ void CalculateStatistics(map<long, MutualFund>& mutualFunds)
     double prev_three_yr_avg = 0;
     double prev_five_yr_avg = 0;
 
-    double prev_one_yr_std_dev = 0;
-    double prev_three_yr_std_dev = 0;
-    double prev_five_yr_std_dev = 0;
-
-    boost::gregorian::date temp_date;
+    double prev_one_yr_var_sum = 0;
+    double prev_three_yr_var_sum = 0;
+    double prev_five_yr_var_sum = 0;
 
     for (auto& dataKv : mfKv.second.mData)
     {
-      boost::gregorian::date date_today = dataKv.first;
+      if (auto cagr = CalculateCagr(mfKv.second.mData, dataKv.first, 365))
+      {
+        dataKv.second.mOneYrCagr = *cagr;
+      }
+      if (auto cagr = CalculateCagr(mfKv.second.mData, dataKv.first, 1095))
+      {
+        dataKv.second.mThreeYrCagr = *cagr;
+      }
+      if (auto cagr = CalculateCagr(mfKv.second.mData, dataKv.first, 1825))
+      {
+        dataKv.second.mFiveYrCagr = *cagr;
+      }
+
       double nav_today = dataKv.second.mNav;
-
-      boost::gregorian::date one_yr_ago = date_today -
-        boost::gregorian::date_duration(364);
-      boost::gregorian::date three_yr_ago = date_today -
-        boost::gregorian::date_duration(1094);
-      boost::gregorian::date five_yr_ago = date_today -
-        boost::gregorian::date_duration(1824);
-
       one_year_rolling_total += nav_today;
       three_year_rolling_total += nav_today;
       five_year_rolling_total += nav_today;
 
-      if (mfKv.second.mData.find(one_yr_ago) != mfKv.second.mData.end())
+      auto resOne = CalculateAverageAndVarianceSum(mfKv.second.mData,
+                                                   dataKv.first,
+                                                   one_year_rolling_total,
+                                                   prev_one_yr_var_sum,
+                                                   prev_one_yr_avg,
+                                                   365);
+      if (get<0>(resOne))
       {
-        double nav_one_yr_ago = mfKv.second.mData.at(one_yr_ago).mNav;
-
-        double cagr =
-          (pow((nav_today / nav_one_yr_ago), 1.0f/1.0f) - 1) * 100.0f;
-        dataKv.second.mOneYrCagr = cagr;
-
-        dataKv.second.mOneYrAvg = one_year_rolling_total / 365.0f;
-        one_year_rolling_total -= nav_one_yr_ago;
-
-        // first run
-        if (prev_one_yr_std_dev == 0)
-        {
-          double squared_diff_total = 0;
-          for (temp_date = one_yr_ago;
-               temp_date <= date_today;
-               temp_date += boost::gregorian::date_duration(1))
-          {
-            squared_diff_total +=
-              pow(mfKv.second.mData.at(temp_date).mNav -
-                  dataKv.second.mOneYrAvg, 2);
-          }
-          dataKv.second.mOneYrStdDev =
-            pow(squared_diff_total / 364.0f, 0.5f);
-        }
-        else
-        {
-          dataKv.second.mOneYrStdDev = prev_one_yr_std_dev +
-            ((nav_today - nav_one_yr_ago) *
-             (nav_today - dataKv.second.mOneYrAvg +
-              nav_one_yr_ago - prev_one_yr_avg) /
-             364.0f);
-        }
-
-        prev_one_yr_avg = dataKv.second.mOneYrAvg;
-        prev_one_yr_std_dev = dataKv.second.mOneYrStdDev;
-      }
-      else
-      {
-        continue;
+        dataKv.second.mOneYrVarSum = get<1>(resOne);
+        dataKv.second.mOneYrAvg = get<2>(resOne);
       }
 
-      if (mfKv.second.mData.find(three_yr_ago) != mfKv.second.mData.end())
+      auto resThree = CalculateAverageAndVarianceSum(mfKv.second.mData,
+                                                     dataKv.first,
+                                                     three_year_rolling_total,
+                                                     prev_three_yr_var_sum,
+                                                     prev_three_yr_avg,
+                                                     1095);
+      if (get<0>(resThree))
       {
-        double nav_three_yr_ago = mfKv.second.mData.at(three_yr_ago).mNav;
-
-        double cagr =
-          (pow((nav_today / nav_three_yr_ago), 1.0f/3.0f) - 1) * 100.0f;
-        dataKv.second.mThreeYrCagr = cagr;
-
-        dataKv.second.mThreeYrAvg = three_year_rolling_total / 1095.0f;
-        three_year_rolling_total -= nav_three_yr_ago;
-
-        // first run
-        if (prev_three_yr_std_dev == 0)
-        {
-          double squared_diff_total = 0;
-          for (temp_date = three_yr_ago;
-               temp_date <= date_today;
-               temp_date += boost::gregorian::date_duration(1))
-          {
-            squared_diff_total +=
-              pow(mfKv.second.mData.at(temp_date).mNav -
-                  dataKv.second.mThreeYrAvg, 2);
-          }
-          dataKv.second.mThreeYrStdDev =
-            pow(squared_diff_total / 1094.0f, 0.5f);
-        }
-        else
-        {
-          dataKv.second.mThreeYrStdDev = prev_three_yr_std_dev +
-            ((nav_today - nav_three_yr_ago) *
-             (nav_today - dataKv.second.mThreeYrAvg +
-              nav_three_yr_ago - prev_three_yr_avg) /
-             1094.0f);
-        }
-
-        prev_three_yr_avg = dataKv.second.mThreeYrAvg;
-        prev_three_yr_std_dev = dataKv.second.mThreeYrStdDev;
-      }
-      else
-      {
-        continue;
+        dataKv.second.mThreeYrVarSum = get<1>(resThree);
+        dataKv.second.mThreeYrAvg = get<2>(resThree);
       }
 
-      if (mfKv.second.mData.find(five_yr_ago) != mfKv.second.mData.end())
+      auto resFive = CalculateAverageAndVarianceSum(mfKv.second.mData,
+                                                    dataKv.first,
+                                                    five_year_rolling_total,
+                                                    prev_five_yr_var_sum,
+                                                    prev_five_yr_avg,
+                                                    1825);
+      if (get<0>(resFive))
       {
-        double nav_five_yr_ago = mfKv.second.mData.at(five_yr_ago).mNav;
-
-        double cagr =
-          (pow((nav_today / nav_five_yr_ago), 1.0f/5.0f) - 1) * 100.0f;
-        dataKv.second.mFiveYrCagr = cagr;
-
-        dataKv.second.mFiveYrAvg = five_year_rolling_total / 1825.0f;
-        five_year_rolling_total -= nav_five_yr_ago;
-
-        // first run
-        if (prev_five_yr_std_dev == 0)
-        {
-          double squared_diff_total = 0;
-          for (temp_date = five_yr_ago;
-               temp_date <= date_today;
-               temp_date += boost::gregorian::date_duration(1))
-          {
-            squared_diff_total +=
-              pow(mfKv.second.mData.at(temp_date).mNav -
-                  dataKv.second.mFiveYrAvg, 2);
-          }
-          dataKv.second.mFiveYrStdDev =
-            pow(squared_diff_total / 1824.0f, 0.5f);
-        }
-        else
-        {
-          dataKv.second.mFiveYrStdDev = prev_five_yr_std_dev +
-            ((nav_today - nav_five_yr_ago) *
-             (nav_today - dataKv.second.mFiveYrAvg +
-              nav_five_yr_ago - prev_five_yr_avg) /
-             1824.0f);
-        }
-
-        prev_five_yr_avg = dataKv.second.mFiveYrAvg;
-        prev_five_yr_std_dev = dataKv.second.mFiveYrStdDev;
+        dataKv.second.mFiveYrVarSum = get<1>(resFive);
+        dataKv.second.mFiveYrAvg = get<2>(resFive);
       }
     }
   }
@@ -557,23 +544,23 @@ void WriteToCsv(map<long, MutualFund>& mutualFunds, const string& directory)
       }
       out << ",";
 
-      if (dataKv.second.mOneYrStdDev != 0 || first_one_yr_std_dev)
+      if (dataKv.second.mOneYrVarSum != 0 || first_one_yr_std_dev)
       {
-        out << dataKv.second.mOneYrStdDev;
+        out << pow(dataKv.second.mOneYrVarSum / 365.0f, 0.5f);
         first_one_yr_std_dev = true;
       }
       out << ",";
 
-      if (dataKv.second.mThreeYrStdDev != 0 || first_three_yr_std_dev)
+      if (dataKv.second.mThreeYrVarSum != 0 || first_three_yr_std_dev)
       {
-        out << dataKv.second.mThreeYrStdDev;
+        out << pow(dataKv.second.mThreeYrVarSum / 1095.0f, 0.5f);
         first_three_yr_std_dev = true;
       }
       out << ",";
 
-      if (dataKv.second.mFiveYrStdDev != 0 || first_five_yr_std_dev)
+      if (dataKv.second.mFiveYrVarSum != 0 || first_five_yr_std_dev)
       {
-        out << dataKv.second.mFiveYrStdDev;
+        out << pow(dataKv.second.mFiveYrVarSum / 1825.0f, 0.5f);
         first_five_yr_std_dev = true;
       }
 
