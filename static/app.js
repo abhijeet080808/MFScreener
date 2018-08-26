@@ -231,8 +231,8 @@ function addChart(mfCode, csvData, hiddenCharts, mfColor) {
         threeYrRetDataset.data.push(null);
       }
       // add three years standard deviation if available
-      if (mfVal[7] !== undefined && mfVal[7].length > 0) {
-        threeYrStdDevDataset.data.push(mfVal[7]);
+      if (mfVal[8] !== undefined && mfVal[8].length > 0) {
+        threeYrStdDevDataset.data.push(mfVal[8]);
       } else {
         threeYrStdDevDataset.data.push(null);
       }

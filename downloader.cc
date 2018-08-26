@@ -582,6 +582,17 @@ void WriteToCsv(map<long, MutualFund>& mutualFunds, const string& directory)
 
   out.close();
 
+  string file_name1 = directory + "/format.csv";
+  ofstream out1(file_name1.c_str());
+
+  out1 << "MF Code,NAV,"
+       << "1 Yr Cagr,3 Yr Cagr,5 Yr Cagr,"
+       << "1 Yr Avg,3 Yr Avg,5 Yr Avg,"
+       << "1 Yr Std Dev,3 Yr Std Dev,5 Yr Std Dev"
+       << endl;
+
+  out1.close();
+
   cout << "Wrote CSVs for " << mutualFunds.size()
        << " mutual funds" << endl;
 }
