@@ -56,49 +56,55 @@
       <!--Row with two columns-->
       <div class="row">
 
-        <div id="divNavList" class="col-md-2">
+        <div id="divMfList" class="col-md-2">
           <!--Column left-->
           <h4>Mutual Fund Selector</h4>
-          <input id="inputNavSearch" class="form-control autocomplete" style="margin-top: 1em" placeholder="Mutual Fund">
+          <input id="inputMfSearch" class="form-control autocomplete"
+                 style="margin-top: 1em" placeholder="Mutual Fund">
         </div>
 
-        <div id="divNavChart" class="col-md-10">
+        <div id="divChart" class="col-md-10">
           <!--Column right-->
           <div class="row">
 
             <div class="col-md-2">
               <label class="control-label">&nbsp;</label>
-              <button id="btnLastTenYr" class="btn btn-default btn-block" onclick="updateNavDate(10)">Last 10 years</button>
+              <button id="btnLastTenYr" class="btn btn-default btn-block"
+                      onclick="updateMfDate(10)">Last 10 years</button>
             </div>
 
             <div class="col-md-2">
               <label class="control-label">&nbsp;</label>
-              <button id="btnLastFiveYr" class="btn btn-default btn-block" onclick="updateNavDate(5)">Last 5 years</button>
+              <button id="btnLastFiveYr" class="btn btn-default btn-block"
+                      onclick="updateMfDate(5)">Last 5 years</button>
             </div>
 
             <div class="col-md-2">
               <label class="control-label">&nbsp;</label>
-              <button id="btnLastThreeYr" class="btn btn-default btn-block" onclick="updateNavDate(3)">Last 3 years</button>
+              <button id="btnLastThreeYr" class="btn btn-default btn-block"
+                      onclick="updateMfDate(3)">Last 3 years</button>
             </div>
 
             <div class="col-md-2">
               <label class="control-label">&nbsp;</label>
-              <button id="btnLastOneYr" class="btn btn-default btn-block" onclick="updateNavDate(1)">Last 1 year</button>
+              <button id="btnLastOneYr" class="btn btn-default btn-block"
+                      onclick="updateMfDate(1)">Last 1 year</button>
             </div>
 
             <div class="col-md-2">
-              <label class="control-label" for="inputNavStartDate">Start Date</label>
-              <input id="inputNavStartDate" class="form-control" readOnly="true">
+              <label class="control-label" for="inputMfStartDate">Start Date</label>
+              <input id="inputMfStartDate" class="form-control" readOnly="true">
             </div>
 
             <div class="col-md-2">
-              <label class="control-label" for="inputNavEndDate">End Date</label>
-              <input id="inputNavEndDate" class="form-control" readOnly="true">
+              <label class="control-label" for="inputMfEndDate">End Date</label>
+              <input id="inputMfEndDate" class="form-control" readOnly="true">
             </div>
 
           </div>
 
 		      <canvas id="canvasNavChart" style="width: 100%; margin-top: 1em"></canvas>
+		      <canvas id="canvasRetChart" style="width: 100%; margin-top: 1em"></canvas>
         </div>
 
       </div>

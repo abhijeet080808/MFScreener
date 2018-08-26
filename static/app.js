@@ -31,25 +31,26 @@ function getChartColor() {
   return chroma("black");
 }
 
-function addLabels(startDate, endDate, periodicity) {
+function addLabels(chartConfig, startDate, endDate, periodicity) {
   // empty labels
-  navConfig.data.labels = [];
-  var currDate = startDate;
-  console.log("Setting labels from " + currDate.format() +
+  chartConfig.data.labels = [];
+  // clone is needed else startDate is modified on add() below
+  var currDate = startDate.clone();
+  console.log("Setting labels from " + startDate.format() +
               " to " + endDate.format() +
               " with periodicity " + periodicity);
 
   while (currDate.isSameOrBefore(endDate)) {
-    navConfig.data.labels.push(currDate.format("DD MMM YYYY"));
+    chartConfig.data.labels.push(currDate.format("DD MMM YYYY"));
     currDate.add(periodicity, "days");
   }
 }
 
-function getChart(mfCode, hiddenYAxes) {
-  readTextFile(mfCode, "/static/csv/" + mfCode + ".csv", hiddenYAxes);
+function getChart(mfCode, hiddenCharts, mfColor) {
+  readTextFile(mfCode, "/static/csv/" + mfCode + ".csv", hiddenCharts, mfColor);
 }
 
-function readTextFile(mfCode, url, hiddenYAxes) {
+function readTextFile(mfCode, url, hiddenCharts, mfColor) {
   // read text from URL location
   console.log("Reading " + url);
   var req = new XMLHttpRequest();
@@ -59,7 +60,7 @@ function readTextFile(mfCode, url, hiddenYAxes) {
   req.onreadystatechange = function() {
     // file is downloaded
     if (req.readyState === XMLHttpRequest.DONE) {
-      addChart(mfCode, req.responseText, hiddenYAxes);
+      addChart(mfCode, req.responseText, hiddenCharts, mfColor);
     }
   }
 }
@@ -84,11 +85,16 @@ function readCsv(csvData) {
   return mfValues;
 }
 
-function addChart(mfCode, csvData, hiddenYAxes) {
+function addChart(mfCode, csvData, hiddenCharts, mfColor) {
   console.log("Adding chart " + mfCode);
 
-  var mfValues = readCsv(csvData);
-  var hexColor = getChartColor();
+  var hexColor;
+  if (mfColor === null) {
+    hexColor = getChartColor();
+  } else {
+    hexColor = mfColor;
+  }
+
   var color1 = "rgba(" +
                chroma(hexColor).get('rgb.r') + "," +
                chroma(hexColor).get('rgb.g') + "," +
@@ -107,6 +113,24 @@ function addChart(mfCode, csvData, hiddenYAxes) {
     label: "NAV - " + mfCode,
     data: [],
     yAxisID: "NAV",
+    backgroundColor: color2,
+    borderColor: color2,
+    borderWidth: 2,
+    //borderDash: [2, 2],
+    fill: false,
+    pointRadius: 0,
+    // tooltip sensitivity
+    pointHitRadius: 5,
+    // custom data
+    mfCode: mfCode,
+    mfColor: hexColor,
+    mfType: "NAV"
+  }
+
+  var threeYrAvgNavDataset = {
+    label: "3 Yr Avg NAV - " + mfCode,
+    data: [],
+    yAxisID: "NAV",
     backgroundColor: color1,
     borderColor: color1,
     borderWidth: 2,
@@ -117,7 +141,8 @@ function addChart(mfCode, csvData, hiddenYAxes) {
     pointHitRadius: 5,
     // custom data
     mfCode: mfCode,
-    mfColor: hexColor
+    mfColor: hexColor,
+    mfType: "THREE_YR_AVG_NAV"
   }
 
   var threeYrRetDataset = {
@@ -133,22 +158,42 @@ function addChart(mfCode, csvData, hiddenYAxes) {
     // tooltip sensitivity
     pointHitRadius: 5,
     mfCode: mfCode,
-    mfColor: hexColor
+    mfColor: hexColor,
+    mfType: "THREE_YR_RET"
   }
 
-  for (var i = 0; i < hiddenYAxes.length; i++) {
-    if (hiddenYAxes[i] == navDataset.yAxisID) {
+  var threeYrStdDevDataset = {
+    label: "3 Yr Std Dev - " + mfCode,
+    data: [],
+    yAxisID: "THREE_YR_STD_DEV",
+    backgroundColor: color1,
+    borderColor: color1,
+    borderWidth: 2,
+    //borderDash: [2, 2],
+    fill: false,
+    pointRadius: 0,
+    // tooltip sensitivity
+    pointHitRadius: 5,
+    mfCode: mfCode,
+    mfColor: hexColor,
+    mfType: "THREE_YR_STD_DEV"
+  }
+
+  for (var i = 0; i < hiddenCharts.length; i++) {
+    if (hiddenCharts[i] == navDataset.mfType) {
       navDataset.hidden = true;
-    } else {
-      navDataset.hidden = false;
-    }
-
-    if (hiddenYAxes[i] == threeYrRetDataset.yAxisID) {
+    } else if (hiddenCharts[i] == threeYrAvgNavDataset.mfType) {
+      threeYrAvgNavDataset.hidden = true;
+    } else if (hiddenCharts[i] == threeYrRetDataset.mfType) {
       threeYrRetDataset.hidden = true;
+    } else if (hiddenCharts[i] == threeYrStdDevDataset.mfType) {
+      threeYrStdDevDataset.hidden = true;
     } else {
-      threeYrRetDataset.hidden = false;
+      console.log("Unknown hidden type " + hiddenCharts[i]);
     }
   }
+
+  var mfValues = readCsv(csvData);
 
   // get values for the relevant time markers
   for (var i = 0; i < navConfig.data.labels.length; i++) {
@@ -162,23 +207,52 @@ function addChart(mfCode, csvData, hiddenYAxes) {
       } else {
         navDataset.data.push(null);
       }
+      // add three years average if available
+      if (mfVal[5] !== undefined && mfVal[5].length > 0) {
+        threeYrAvgNavDataset.data.push(mfVal[5]);
+      } else {
+        threeYrAvgNavDataset.data.push(null);
+      }
+    } else {
+      navDataset.data.push(null);
+      threeYrAvgNavDataset.data.push(null);
+    }
+  }
+
+  for (var i = 0; i < retConfig.data.labels.length; i++) {
+    var date = moment(retConfig.data.labels[i], "DD MMM YYYY");
+    var mfVal = mfValues[date.format("YYYY-MM-DD")];
+
+    if (mfVal !== undefined) {
       // add three years return if available
       if (mfVal[2] !== undefined && mfVal[2].length > 0) {
         threeYrRetDataset.data.push(mfVal[2]);
       } else {
         threeYrRetDataset.data.push(null);
       }
+      // add three years standard deviation if available
+      if (mfVal[7] !== undefined && mfVal[7].length > 0) {
+        threeYrStdDevDataset.data.push(mfVal[7]);
+      } else {
+        threeYrStdDevDataset.data.push(null);
+      }
     } else {
-      navDataset.data.push(null);
       threeYrRetDataset.data.push(null);
+      threeYrStdDevDataset.data.push(null);
     }
   }
 
   navConfig.data.datasets.push(navDataset);
-  navConfig.data.datasets.push(threeYrRetDataset);
+  navConfig.data.datasets.push(threeYrAvgNavDataset);
+  retConfig.data.datasets.push(threeYrRetDataset);
+  retConfig.data.datasets.push(threeYrStdDevDataset);
 
-  console.log("Total datasets " + navConfig.data.datasets.length);
+  console.log("Total NAV datasets " + navConfig.data.datasets.length);
+  console.log("Total RET datasets " + retConfig.data.datasets.length);
+
   navChart.update();
+  retChart.update();
+
   addButton(mfCode, hexColor);
 }
 
@@ -193,13 +267,25 @@ function removeChart(mfCode) {
     }
   }
 
-  console.log("Total datasets " + navConfig.data.datasets.length);
+  var j = retConfig.data.datasets.length;
+  while (j--) {
+    if (retConfig.data.datasets[j].mfCode == mfCode) {
+      // remove the element
+      retConfig.data.datasets.splice(j, 1);
+    }
+  }
+
+  console.log("Total NAV datasets " + navConfig.data.datasets.length);
+  console.log("Total RET datasets " + retConfig.data.datasets.length);
+
   navChart.update();
+  retChart.update();
 }
 
 function addButton(mfCode, textColor) {
   if (document.getElementById("btn" + mfCode) != null) {
     // button exists
+    document.getElementById("btn" + mfCode).style.color = textColor;
     return;
   }
 
@@ -215,11 +301,11 @@ function addButton(mfCode, textColor) {
                             "font-weight: bolder !important; " +
                             "color: " + textColor);
 
-  document.getElementById("divNavList").appendChild(btn);
+  document.getElementById("divMfList").appendChild(btn);
 
   btn.addEventListener("click", function() {
     removeChart(mfCode);
-    document.getElementById("divNavList").removeChild(this);
+    document.getElementById("divMfList").removeChild(this);
   }, false);
 }
 
@@ -233,12 +319,12 @@ function getNavLabel(mfCode) {
   return mfLabelLookup[mfCode];
 }
 
-function navAutocompleteCb(ui) {
-  if (navConfig.data.datasets.length >= (maxCharts * 2)) {
+function mfAutocompleteCb(ui) {
+  if (navConfig.data.datasets.length >= (maxCharts * 2) ||
+      retConfig.data.datasets.length >= (maxCharts * 2)) {
     return;
   }
 
-  var currHiddenMfCodes = {};
   for (var i = 0; i < navConfig.data.datasets.length; i++) {
     if (navConfig.data.datasets[i].mfCode == ui.item.mfcode) {
       // element already exists
@@ -249,42 +335,76 @@ function navAutocompleteCb(ui) {
     navConfig.data.datasets[i].hidden = !navChart.isDatasetVisible(i);
   }
 
-  getChart(ui.item.mfcode, []);
+  for (var i = 0; i < retConfig.data.datasets.length; i++) {
+    if (retConfig.data.datasets[i].mfCode == ui.item.mfcode) {
+      // element already exists
+      return;
+    }
+
+    // keep current hidden status even after adding a new chart
+    retConfig.data.datasets[i].hidden = !retChart.isDatasetVisible(i);
+  }
+
+  getChart(ui.item.mfcode, [], null);
 }
 
-function navDateChangeCb() {
-  var startDate = moment($("#inputNavStartDate").datepicker("getDate"));
-  var endDate = moment($("#inputNavEndDate").datepicker("getDate"));
+function chartDateChangeCb() {
+  var startDate = moment($("#inputMfStartDate").datepicker("getDate"));
+  var endDate = moment($("#inputMfEndDate").datepicker("getDate"));
 
   if (startDate.isAfter(endDate)) {
     return;
   }
 
-  var currMfCodes = [];
+  var mfCodes = [];
   // mf code vs array of y axis ids
-  var currHiddenMfCodes = {};
+  var hiddenMfCodes = {};
+  // mf code vs color
+  var mfColors = {};
+
   for (var i = 0; i < navConfig.data.datasets.length; i++) {
     var mfCode = navConfig.data.datasets[i].mfCode;
-    if (currMfCodes.includes(mfCode) === false) {
-      currMfCodes.push(mfCode);
+
+    if (mfCodes.includes(mfCode) === false) {
+      mfCodes.push(mfCode);
     }
 
-    if (currHiddenMfCodes[mfCode] === undefined) {
-      currHiddenMfCodes[mfCode] = [];
+    if (hiddenMfCodes[mfCode] === undefined) {
+      hiddenMfCodes[mfCode] = [];
     }
 
     if (navChart.isDatasetVisible(i) === false) {
-      currHiddenMfCodes[mfCode].push(navConfig.data.datasets[i].yAxisID);
+      hiddenMfCodes[mfCode].push(navConfig.data.datasets[i].mfType);
+    }
+
+    mfColors[mfCode] = navConfig.data.datasets[i].mfColor;
+  }
+
+  for (var i = 0; i < retConfig.data.datasets.length; i++) {
+    var mfCode = retConfig.data.datasets[i].mfCode;
+
+    if (mfCodes.includes(mfCode) === false) {
+      mfCodes.push(mfCode);
+    }
+
+    if (hiddenMfCodes[mfCode] === undefined) {
+      hiddenMfCodes[mfCode] = [];
+    }
+
+    if (retChart.isDatasetVisible(i) === false) {
+      hiddenMfCodes[mfCode].push(retConfig.data.datasets[i].mfType);
     }
   }
 
   // clear existing chart datasets
   navConfig.data.datasets = [];
+  retConfig.data.datasets = [];
 
-  addLabels(startDate, endDate, getPeriodicity(startDate, endDate));
+  addLabels(navConfig, startDate, endDate, getPeriodicity(startDate, endDate));
+  addLabels(retConfig, startDate, endDate, getPeriodicity(startDate, endDate));
 
-  for (var i = 0; i < currMfCodes.length; i++) {
-    getChart(currMfCodes[i], currHiddenMfCodes[currMfCodes[i]]);
+  for (var i = 0; i < mfCodes.length; i++) {
+    getChart(mfCodes[i], hiddenMfCodes[mfCodes[i]], mfColors[mfCodes[i]]);
   }
 }
 
@@ -294,30 +414,37 @@ function getPeriodicity(startDate, endDate) {
   return Math.max(1, Math.ceil(spanDays/200));
 }
 
-function updateNavDate(years) {
+function updateMfDate(years) {
   // "years" earlier
-  $("#inputNavStartDate").datepicker("setDate",
+  $("#inputMfStartDate").datepicker("setDate",
     moment().startOf("day").subtract(years, "years").format("DD MMM YYYY"));
   // today
-  $("#inputNavEndDate").datepicker("setDate",
+  $("#inputMfEndDate").datepicker("setDate",
     moment().startOf("day").format("DD MMM YYYY"));
-  navDateChangeCb();
+  chartDateChangeCb();
 }
 
 // ------------------------------------------------------------------ //
 
 var maxCharts = 10;
+
 var navConfig;
 var navChart;
+
+var retConfig;
+var retChart;
+
 var mfLabelLookup;
+
 // month is 0 indexed
 var defStartDate = moment({ year: 2006, month: 3, day: 1 });
 var defEndDate = moment().startOf("day");
+
 var chartColors;
 
 $(function() {
   // https://jqueryui.com/autocomplete/
-  $("#inputNavSearch").autocomplete({
+  $("#inputMfSearch").autocomplete({
     //source: mf_codes,
     //delay: 300,
     //minLength: 2,
@@ -339,14 +466,14 @@ $(function() {
       response(results.slice(0, 50));
     },
     select: function(event, ui) {
-      navAutocompleteCb(ui);
+      mfAutocompleteCb(ui);
       this.value = "";
       return false;
     }
   });
 
   // https://jqueryui.com/datepicker/
-  $("#inputNavStartDate").datepicker({
+  $("#inputMfStartDate").datepicker({
     changeMonth: true,
     changeYear: true,
     dateFormat: "dd M yy", // 01 Aug 2018
@@ -358,12 +485,12 @@ $(function() {
       }
     }
   });
-  $("#inputNavStartDate").val(defStartDate.format("DD MMM YYYY"));
-  $("#inputNavStartDate").change(function() {
-    navDateChangeCb();
+  $("#inputMfStartDate").val(defStartDate.format("DD MMM YYYY"));
+  $("#inputMfStartDate").change(function() {
+    chartDateChangeCb();
   });
 
-  $("#inputNavEndDate").datepicker({
+  $("#inputMfEndDate").datepicker({
     changeMonth: true,
     changeYear: true,
     dateFormat: "dd M yy", // 01 Aug 2018
@@ -375,9 +502,9 @@ $(function() {
       }
     }
   });
-  $("#inputNavEndDate").val(defEndDate.format("DD MMM YYYY"),);
-  $("#inputNavEndDate").change(function() {
-    navDateChangeCb();
+  $("#inputMfEndDate").val(defEndDate.format("DD MMM YYYY"),);
+  $("#inputMfEndDate").change(function() {
+    chartDateChangeCb();
   });
 
   // http://www.chartjs.org/samples/latest/charts/line/basic.html
@@ -411,8 +538,42 @@ $(function() {
             display: true,
             labelString: "NAV"
           }
-        },{
+        }]
+      }
+    }
+  };
+
+  retConfig =  {
+    type: "line",
+    data: {
+      labels: [],
+      datasets: []
+    },
+    options: {
+      title: {
+        display: false,
+      },
+      legend: {
+        display: true,
+        position: "top"
+      },
+      tooltips: {
+        mode: 'index'
+      },
+      scales: {
+        yAxes: [{
           id: "THREE_YR_RET",
+          position: "left",
+          type: "linear",
+          ticks: {
+            suggestedMin: 0,
+          },
+          scaleLabel: {
+            display: true,
+            labelString: "3 Yr Return"
+          }
+        },{
+          id: "THREE_YR_STD_DEV",
           position: "right",
           type: "linear",
           ticks: {
@@ -420,21 +581,22 @@ $(function() {
           },
           scaleLabel: {
             display: true,
-            labelString: "3 Year Return"
+            labelString: "3 Year Standard Deviation"
           }
         }]
       }
     }
   };
 
-  updateNavDate(5);
+  updateMfDate(5);
 
   navChart = new Chart(document.getElementById("canvasNavChart"), navConfig);
+  retChart = new Chart(document.getElementById("canvasRetChart"), retConfig);
 
-  getChart("113177", []);
-  getChart("130502", []);
-  getChart("125494", []);
-  getChart("100822", []);
+  getChart("113177", [], null);
+  getChart("130502", [], null);
+  getChart("125494", [], null);
+  getChart("100822", [], null);
 
   // Serialize URL
   // https://gka.github.io/palettes/
