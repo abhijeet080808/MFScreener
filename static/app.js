@@ -162,21 +162,21 @@ function addChart(mfCode, csvData, hiddenCharts, mfColor) {
     mfType: "THREE_YR_RET"
   }
 
-  var threeYrStdDevDataset = {
-    label: "3 Yr Std Dev - " + mfCode,
+  var threeYrCoeffDevDataset = {
+    label: "3 Yr Coeff of Dev - " + mfCode,
     data: [],
-    yAxisID: "THREE_YR_STD_DEV",
+    yAxisID: "THREE_YR_RET",
     backgroundColor: color1,
     borderColor: color1,
     borderWidth: 2,
     //borderDash: [2, 2],
-    fill: false,
+    fill: true,
     pointRadius: 0,
     // tooltip sensitivity
     pointHitRadius: 5,
     mfCode: mfCode,
     mfColor: hexColor,
-    mfType: "THREE_YR_STD_DEV"
+    mfType: "THREE_YR_COEFF_DEV"
   }
 
   for (var i = 0; i < hiddenCharts.length; i++) {
@@ -186,8 +186,8 @@ function addChart(mfCode, csvData, hiddenCharts, mfColor) {
       threeYrAvgNavDataset.hidden = true;
     } else if (hiddenCharts[i] == threeYrRetDataset.mfType) {
       threeYrRetDataset.hidden = true;
-    } else if (hiddenCharts[i] == threeYrStdDevDataset.mfType) {
-      threeYrStdDevDataset.hidden = true;
+    } else if (hiddenCharts[i] == threeYrCoeffDevDataset.mfType) {
+      threeYrCoeffDevDataset.hidden = true;
     } else {
       console.log("Unknown hidden type " + hiddenCharts[i]);
     }
@@ -230,25 +230,27 @@ function addChart(mfCode, csvData, hiddenCharts, mfColor) {
       } else {
         threeYrRetDataset.data.push(null);
       }
-      // add three years standard deviation if available
+      // add three years coefficient of standard deviation if available
       if (mfVal[8] !== undefined && mfVal[8].length > 0) {
-        threeYrStdDevDataset.data.push(mfVal[8]);
+        threeYrCoeffDevDataset.data.push(mfVal[8]);
       } else {
-        threeYrStdDevDataset.data.push(null);
+        threeYrCoeffDevDataset.data.push(null);
       }
     } else {
       threeYrRetDataset.data.push(null);
-      threeYrStdDevDataset.data.push(null);
+      threeYrCoeffDevDataset.data.push(null);
     }
   }
 
   navConfig.data.datasets.push(navDataset);
   navConfig.data.datasets.push(threeYrAvgNavDataset);
   retConfig.data.datasets.push(threeYrRetDataset);
-  retConfig.data.datasets.push(threeYrStdDevDataset);
+  retConfig.data.datasets.push(threeYrCoeffDevDataset);
 
   console.log("Total NAV datasets " + navConfig.data.datasets.length);
+  console.log(navConfig);
   console.log("Total RET datasets " + retConfig.data.datasets.length);
+  console.log(retConfig);
 
   navChart.update();
   retChart.update();
@@ -536,7 +538,7 @@ $(function() {
           },
           scaleLabel: {
             display: true,
-            labelString: "NAV"
+            labelString: "Value"
           }
         }]
       }
@@ -570,20 +572,20 @@ $(function() {
           },
           scaleLabel: {
             display: true,
-            labelString: "3 Yr Return"
+            labelString: "Percentage"
           }
-        },{
-          id: "THREE_YR_STD_DEV",
-          position: "right",
-          type: "linear",
-          ticks: {
-            suggestedMin: 0,
-          },
-          scaleLabel: {
-            display: true,
-            labelString: "3 Year Standard Deviation"
-          }
-        }]
+        }]//,{
+        //  id: "THREE_YR_STD_DEV",
+        //  position: "right",
+        //  type: "linear",
+        //  ticks: {
+        //    suggestedMin: 0,
+        //  },
+        //  scaleLabel: {
+        //    display: true,
+        //    labelString: "3 Year Standard Deviation"
+        //  }
+        //}]
       }
     }
   };

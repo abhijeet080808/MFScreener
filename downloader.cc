@@ -1,4 +1,5 @@
 #include <boost/date_time/gregorian/gregorian.hpp>
+#include <sys/time.h>
 
 #include <cassert>
 #include <dirent.h>
@@ -61,7 +62,8 @@ public:
   map<boost::gregorian::date, MutualFundData> mData;
 };
 
-vector<string> GetNavFileNames(const string& parentDir)
+vector<string>
+GetNavFileNames(const string& parentDir)
 {
   vector<string> file_names;
 
@@ -84,7 +86,8 @@ vector<string> GetNavFileNames(const string& parentDir)
   return file_names;
 }
 
-vector<string> Split(const string& str, const string& delimiter)
+vector<string>
+Split(const string& str, const string& delimiter)
 {
   size_t pos_start = 0, pos_end, delim_len = delimiter.length();
 
@@ -102,7 +105,8 @@ vector<string> Split(const string& str, const string& delimiter)
   return res;
 }
 
-map<long, MutualFund> ReadNavFiles(const vector<string>& fileNames)
+map<long, MutualFund>
+ReadNavFiles(const vector<string>& fileNames)
 {
   map<long, MutualFund> mutual_funds;
   int num_nav = 0;
@@ -260,7 +264,8 @@ map<long, MutualFund> ReadNavFiles(const vector<string>& fileNames)
   return mutual_funds;
 }
 
-void AddMissingDates(map<long, MutualFund>& mutualFunds)
+void
+AddMissingDates(map<long, MutualFund>& mutualFunds)
 {
   int added_navs = 0;
 
@@ -299,7 +304,7 @@ void AddMissingDates(map<long, MutualFund>& mutualFunds)
        << " and added " << added_navs << " NAVs" << endl;
 }
 
-unique_ptr<double>
+tuple<bool, double>
 CalculateCagr(const map<boost::gregorian::date, MutualFundData>& mfData,
               const boost::gregorian::date& presentDate,
               int daysAgo)
@@ -312,9 +317,10 @@ CalculateCagr(const map<boost::gregorian::date, MutualFundData>& mfData,
     double present_nav = mfData.at(presentDate).mNav;
     double old_nav = mfData.at(old_date).mNav;
     double cagr = (pow((present_nav / old_nav), 365.0f/daysAgo) - 1) * 100.0f;
-    return unique_ptr<double>(new double(cagr));
+    return make_tuple(true, cagr);
   }
-  return nullptr;
+
+  return make_tuple(false, 0);
 }
 
 tuple<bool, double, double>
@@ -372,10 +378,11 @@ CalculateAverageAndVarianceSum(
 }
 
 
-void CalculateStatistics(map<long, MutualFund>& mutualFunds)
+void
+CalculateStatistics(map<long, MutualFund>& mutualFunds)
 {
   // cagr = ((final_value / initial_value)^(1 / number of periods) - 1) x 100
-  // std_dev = ((sum of [(actual - mean)^2]) / (N - 1))^(1/2)
+  // std_dev = ((sum of [(actual - mean)^2]) / N)^(1/2)
   // http://jonisalonen.com/2014/efficient-and-accurate-rolling-standard-deviation/
   // variance_sum = prev_variance_sum +
   //   (newest_val - oldest_val_just_outside_window) *
@@ -408,17 +415,22 @@ void CalculateStatistics(map<long, MutualFund>& mutualFunds)
 
     for (auto& dataKv : mfKv.second.mData)
     {
-      if (auto cagr = CalculateCagr(mfKv.second.mData, dataKv.first, 365))
+      auto cagrOne = CalculateCagr(mfKv.second.mData, dataKv.first, 365);
+      if (get<0>(cagrOne))
       {
-        dataKv.second.mOneYrCagr = *cagr;
+        dataKv.second.mOneYrCagr = get<1>(cagrOne);
       }
-      if (auto cagr = CalculateCagr(mfKv.second.mData, dataKv.first, 1095))
+
+      auto cagrThree = CalculateCagr(mfKv.second.mData, dataKv.first, 1095);
+      if (get<0>(cagrThree))
       {
-        dataKv.second.mThreeYrCagr = *cagr;
+        dataKv.second.mThreeYrCagr = get<1>(cagrThree);
       }
-      if (auto cagr = CalculateCagr(mfKv.second.mData, dataKv.first, 1825))
+
+      auto cagrFive = CalculateCagr(mfKv.second.mData, dataKv.first, 1825);
+      if (get<0>(cagrFive))
       {
-        dataKv.second.mFiveYrCagr = *cagr;
+        dataKv.second.mFiveYrCagr = get<1>(cagrFive);
       }
 
       double nav_today = dataKv.second.mNav;
@@ -468,7 +480,14 @@ void CalculateStatistics(map<long, MutualFund>& mutualFunds)
        << " mutual funds" << endl;
 }
 
-void WriteToCsv(map<long, MutualFund>& mutualFunds, const string& directory)
+double
+GetCoefficientOfVariation(double average, double varianceSum, double timeDays)
+{
+  return pow(varianceSum / timeDays, 0.5f) / average * 100.0f;
+}
+
+void
+WriteToCsv(map<long, MutualFund>& mutualFunds, const string& directory)
 {
   cout << "Writing CSVs for " << mutualFunds.size()
        << " mutual funds" << endl;
@@ -492,9 +511,9 @@ void WriteToCsv(map<long, MutualFund>& mutualFunds, const string& directory)
     bool first_one_yr_avg = false;
     bool first_three_yr_avg = false;
     bool first_five_yr_avg = false;
-    bool first_one_yr_std_dev = false;
-    bool first_three_yr_std_dev = false;
-    bool first_five_yr_std_dev = false;
+    bool first_one_yr_coeff = false;
+    bool first_three_yr_coeff = false;
+    bool first_five_yr_coeff = false;
 
     for (auto& dataKv : mfKv.second.mData)
     {
@@ -544,24 +563,30 @@ void WriteToCsv(map<long, MutualFund>& mutualFunds, const string& directory)
       }
       out << ",";
 
-      if (dataKv.second.mOneYrVarSum != 0 || first_one_yr_std_dev)
+      if (dataKv.second.mOneYrVarSum != 0 || first_one_yr_coeff)
       {
-        out << pow(dataKv.second.mOneYrVarSum / 365.0f, 0.5f);
-        first_one_yr_std_dev = true;
+        out << GetCoefficientOfVariation(dataKv.second.mOneYrAvg,
+                                         dataKv.second.mOneYrVarSum,
+                                         365.0f);
+        first_one_yr_coeff = true;
       }
       out << ",";
 
-      if (dataKv.second.mThreeYrVarSum != 0 || first_three_yr_std_dev)
+      if (dataKv.second.mThreeYrVarSum != 0 || first_three_yr_coeff)
       {
-        out << pow(dataKv.second.mThreeYrVarSum / 1095.0f, 0.5f);
-        first_three_yr_std_dev = true;
+        out << GetCoefficientOfVariation(dataKv.second.mThreeYrAvg,
+                                         dataKv.second.mThreeYrVarSum,
+                                         1095.0f);
+        first_three_yr_coeff = true;
       }
       out << ",";
 
-      if (dataKv.second.mFiveYrVarSum != 0 || first_five_yr_std_dev)
+      if (dataKv.second.mFiveYrVarSum != 0 || first_five_yr_coeff)
       {
-        out << pow(dataKv.second.mFiveYrVarSum / 1825.0f, 0.5f);
-        first_five_yr_std_dev = true;
+        out << GetCoefficientOfVariation(dataKv.second.mFiveYrAvg,
+                                         dataKv.second.mFiveYrVarSum,
+                                         1825.0f);
+        first_five_yr_coeff = true;
       }
 
       out << endl;
@@ -588,7 +613,7 @@ void WriteToCsv(map<long, MutualFund>& mutualFunds, const string& directory)
   out1 << "MF Code,NAV,"
        << "1 Yr Cagr,3 Yr Cagr,5 Yr Cagr,"
        << "1 Yr Avg,3 Yr Avg,5 Yr Avg,"
-       << "1 Yr Std Dev,3 Yr Std Dev,5 Yr Std Dev"
+       << "1 Yr Coeff of Dev,3 Yr Coeff of Dev,5 Yr Coeff of Dev"
        << endl;
 
   out1.close();
@@ -597,8 +622,20 @@ void WriteToCsv(map<long, MutualFund>& mutualFunds, const string& directory)
        << " mutual funds" << endl;
 }
 
-int main()
+long
+GetCurrentTimeSecs()
 {
+  struct timeval tp;
+  gettimeofday(&tp, NULL);
+  long secs = tp.tv_sec + tp.tv_usec / 1000000;
+  return secs;
+}
+
+int
+main()
+{
+  long start_secs = GetCurrentTimeSecs();
+
   const string nav_dir = "nav";
   const string csv_dir = "static/csv";
 
@@ -607,4 +644,10 @@ int main()
   AddMissingDates(mutual_funds);
   CalculateStatistics(mutual_funds);
   WriteToCsv(mutual_funds, csv_dir);
+
+  long end_secs = GetCurrentTimeSecs();
+  cout << "Time taken: "
+       << (end_secs - start_secs) / 60 << "m "
+       << (end_secs - start_secs) % 60 << "s "
+       << endl;
 }
