@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -387,159 +388,242 @@ Split(const string& str, const string& delimiter)
   return res;
 }
 
-map<long, MutualFund>
-ReadNavFiles(const vector<string>& fileNames)
+stringstream
+ReadAllNavFiles(const vector<string>& fileNames)
 {
-  map<long, MutualFund> mutual_funds;
-  int num_nav = 0;
-
   cout << "Reading " << fileNames.size() << " NAV files" << endl;
 
+  stringstream raw_mf_data;
   for (size_t i = 0; i < fileNames.size(); ++i)
   {
     ifstream in(fileNames.at(i).c_str());
-    string line;
+    raw_mf_data << in.rdbuf();
+    in.close();
+  }
 
-    cout << " [" << (i + 1) << "/" << fileNames.size() << "]"
-         << " Reading " << fileNames.at(i) << endl;
+  cout << "Read " << fileNames.size() << " NAV files" << endl;
 
-    while (getline(in, line))
+  return raw_mf_data;
+}
+
+tuple<long, long>
+ReadMFCode(stringstream& rawMfData)
+{
+  cout << "Reading MF Data for minimum and maximum MF Code values" << endl;
+
+  set<long> mf_codes;
+  string line;
+
+  rawMfData.clear();
+  rawMfData.seekg(0, rawMfData.beg);
+  while (getline(rawMfData, line))
+  {
+    if (line.size() > 0)
     {
-      if (line.size() > 0)
+      vector<string> fields = Split(line, ";");
+      if (fields.size() == 6 &&
+          !fields.at(0).empty() && // code
+          !fields.at(1).empty() && // name
+          !fields.at(2).empty() && // nav
+          !fields.at(5).empty())   // date
       {
-        vector<string> fields = Split(line, ";");
-        if (fields.size() == 6 &&
-            !fields.at(0).empty() && // code
-            !fields.at(1).empty() && // name
-            !fields.at(2).empty() && // nav
-            !fields.at(5).empty())   // date
+        long code;
+
+        try
         {
-          long code;
-          string name;
-          double nav_value;
-          boost::gregorian::date nav_date;
-
-          try
+          // silently fail
+          if (fields.at(0) == "Scheme Code")
           {
-            // silently fail
-            if (fields.at(0) == "Scheme Code")
-            {
-              continue;
-            }
-
-            // silently fail
-            if (fields.at(2) == "NA" ||
-                fields.at(2) == "N.A." ||
-                fields.at(2) == "N/A" ||
-                fields.at(2) == "#N/A" ||
-                fields.at(2) == "#DIV/0!" ||
-                fields.at(2) == "B.C." ||
-                fields.at(2) == "B. C." ||
-                fields.at(2) == "-")
-            {
-              continue;
-            }
-
-            // remove leading and trailing whitespaces
-            fields.at(0).erase(0, fields.at(0).find_first_not_of(" \t\r\n"));
-            fields.at(0).erase(fields.at(0).find_last_not_of(" \t\r\n") + 1);
-            fields.at(1).erase(0, fields.at(1).find_first_not_of(" \t\r\n"));
-            fields.at(1).erase(fields.at(1).find_last_not_of(" \t\r\n") + 1);
-            fields.at(2).erase(0, fields.at(2).find_first_not_of(" \t"));
-            fields.at(2).erase(fields.at(2).find_last_not_of(" \t") + 1);
-            fields.at(5).erase(0, fields.at(5).find_first_not_of(" \t\r\n"));
-            fields.at(5).erase(fields.at(5).find_last_not_of(" \t\r\n") + 1);
-
-            // remove " and ' from name
-            fields.at(1).erase(remove(fields.at(1).begin(),
-                                      fields.at(1).end(),
-                                      '\"'),
-                               fields.at(1).end());
-            fields.at(1).erase(remove(fields.at(1).begin(),
-                                      fields.at(1).end(),
-                                      '\''),
-                               fields.at(1).end());
-
-            // remove comma from nav
-            fields.at(2).erase(remove(fields.at(2).begin(),
-                                      fields.at(2).end(),
-                                      ','),
-                               fields.at(2).end());
-
-            if (fields.at(0).find_first_not_of("0123456789") !=
-                std::string::npos)
-            {
-              throw exception();
-            }
-
-            if (fields.at(2).find_first_not_of("0123456789.") !=
-                std::string::npos)
-            {
-              throw exception();
-            }
-
-            code = stol(fields.at(0));
-            name = fields.at(1);
-            nav_value = stod(fields.at(2));
-
-            vector<string> dates = Split(fields.at(5), "-");
-
-            if (dates.size() != 3)
-            {
-              throw exception();
-            }
-
-            if (dates.at(0).find_first_not_of("0123456789") !=
-                std::string::npos)
-            {
-              throw exception();
-            }
-
-            if (dates.at(2).find_first_not_of("0123456789") !=
-                std::string::npos)
-            {
-              throw exception();
-            }
-
-            // yyyy, mmm, dd
-            nav_date = boost::gregorian::date(
-                stoi(dates.at(2)),
-                boost::date_time::month_str_to_ushort<
-                    boost::gregorian::greg_month>(dates[1]),
-                stoi(dates.at(0)));
-
-            // silently fail
-            if (nav_value == 0)
-            {
-              continue;
-            }
-          }
-          catch (const exception& e)
-          {
-            cout << "Dropping: " << line << endl;
             continue;
           }
 
-          if (mutual_funds.find(code) == mutual_funds.end())
+          // remove leading and trailing whitespaces
+          fields.at(0).erase(0, fields.at(0).find_first_not_of(" \t\r\n"));
+          fields.at(0).erase(fields.at(0).find_last_not_of(" \t\r\n") + 1);
+
+          if (fields.at(0).find_first_not_of("0123456789") !=
+              std::string::npos)
           {
-            MutualFundData mf_data(nav_value);
-            MutualFund mf(code, name, nav_date, mf_data);
-            mutual_funds.insert(make_pair(code, mf));
-          }
-          else
-          {
-            mutual_funds.at(code).mName = name;
-            MutualFundData mf_data(nav_value);
-            mutual_funds.at(code).mData.insert(
-                make_pair(nav_date, mf_data));
+            throw exception();
           }
 
-          num_nav++;
+          code = stol(fields.at(0));
         }
+        catch (const exception& e)
+        {
+          cout << "Dropping: " << line << endl;
+          continue;
+        }
+
+        mf_codes.insert(code);
       }
     }
+  }
 
-    in.close();
+  long min_mf_code = *mf_codes.begin();
+  long max_mf_code = *mf_codes.rbegin();
+
+  cout << "Read " << mf_codes.size() << " mutual funds "
+       << " with minimum MF Code " << min_mf_code
+       << " and maximum MF Code " << max_mf_code
+       << endl;
+
+  return make_tuple(min_mf_code, max_mf_code);
+}
+
+map<long, MutualFund>
+ReadMFData(stringstream& rawMfData,
+           long startingMfCode, long endingMfCode)
+{
+  cout << "Reading MF Data"
+       << " with MF Codes between " << startingMfCode
+       << " and " << endingMfCode << endl;
+
+  map<long, MutualFund> mutual_funds;
+  int num_nav = 0;
+  string line;
+
+  rawMfData.clear();
+  rawMfData.seekg(0, rawMfData.beg);
+  while (getline(rawMfData, line))
+  {
+    if (line.size() > 0)
+    {
+      vector<string> fields = Split(line, ";");
+      if (fields.size() == 6 &&
+          !fields.at(0).empty() && // code
+          !fields.at(1).empty() && // name
+          !fields.at(2).empty() && // nav
+          !fields.at(5).empty())   // date
+      {
+        long code;
+        string name;
+        double nav_value;
+        boost::gregorian::date nav_date;
+
+        try
+        {
+          // silently fail
+          if (fields.at(0) == "Scheme Code")
+          {
+            continue;
+          }
+
+          // silently fail
+          if (fields.at(2) == "NA" ||
+              fields.at(2) == "N.A." ||
+              fields.at(2) == "N/A" ||
+              fields.at(2) == "#N/A" ||
+              fields.at(2) == "#DIV/0!" ||
+              fields.at(2) == "B.C." ||
+              fields.at(2) == "B. C." ||
+              fields.at(2) == "-")
+          {
+            continue;
+          }
+
+          // remove leading and trailing whitespaces
+          fields.at(0).erase(0, fields.at(0).find_first_not_of(" \t\r\n"));
+          fields.at(0).erase(fields.at(0).find_last_not_of(" \t\r\n") + 1);
+          fields.at(1).erase(0, fields.at(1).find_first_not_of(" \t\r\n"));
+          fields.at(1).erase(fields.at(1).find_last_not_of(" \t\r\n") + 1);
+          fields.at(2).erase(0, fields.at(2).find_first_not_of(" \t"));
+          fields.at(2).erase(fields.at(2).find_last_not_of(" \t") + 1);
+          fields.at(5).erase(0, fields.at(5).find_first_not_of(" \t\r\n"));
+          fields.at(5).erase(fields.at(5).find_last_not_of(" \t\r\n") + 1);
+
+          // remove " and ' from name
+          fields.at(1).erase(remove(fields.at(1).begin(),
+                                    fields.at(1).end(),
+                                    '\"'),
+                             fields.at(1).end());
+          fields.at(1).erase(remove(fields.at(1).begin(),
+                                    fields.at(1).end(),
+                                    '\''),
+                             fields.at(1).end());
+
+          // remove comma from nav
+          fields.at(2).erase(remove(fields.at(2).begin(),
+                                    fields.at(2).end(),
+                                    ','),
+                             fields.at(2).end());
+
+          if (fields.at(0).find_first_not_of("0123456789") !=
+              std::string::npos)
+          {
+            throw exception();
+          }
+
+          if (fields.at(2).find_first_not_of("0123456789.") !=
+              std::string::npos)
+          {
+            throw exception();
+          }
+
+          code = stol(fields.at(0));
+          name = fields.at(1);
+          nav_value = stod(fields.at(2));
+
+          vector<string> dates = Split(fields.at(5), "-");
+
+          if (dates.size() != 3)
+          {
+            throw exception();
+          }
+
+          if (dates.at(0).find_first_not_of("0123456789") !=
+              std::string::npos)
+          {
+            throw exception();
+          }
+
+          if (dates.at(2).find_first_not_of("0123456789") !=
+              std::string::npos)
+          {
+            throw exception();
+          }
+
+          // yyyy, mmm, dd
+          nav_date = boost::gregorian::date(
+              stoi(dates.at(2)),
+              boost::date_time::month_str_to_ushort<
+                  boost::gregorian::greg_month>(dates[1]),
+              stoi(dates.at(0)));
+
+          // silently fail
+          if (nav_value == 0)
+          {
+            continue;
+          }
+        }
+        catch (const exception& e)
+        {
+          //cout << "Dropping: " << line << endl;
+          continue;
+        }
+
+        if (code < startingMfCode || code > endingMfCode)
+        {
+          continue;
+        }
+
+        if (mutual_funds.find(code) == mutual_funds.end())
+        {
+          MutualFundData mf_data(nav_value);
+          MutualFund mf(code, name, nav_date, mf_data);
+          mutual_funds.insert(make_pair(code, mf));
+        }
+        else
+        {
+          mutual_funds.at(code).mName = name;
+          MutualFundData mf_data(nav_value);
+          mutual_funds.at(code).mData.insert(
+              make_pair(nav_date, mf_data));
+        }
+
+        num_nav++;
+      }
+    }
   }
 
   cout << "Read " << mutual_funds.size() << " mutual funds and "
@@ -551,11 +635,11 @@ ReadNavFiles(const vector<string>& fileNames)
 void
 AddMissingDates(map<long, MutualFund>& mutualFunds)
 {
-  int added_navs = 0;
-
   cout << "Cleaning " << mutualFunds.size() << " mutual funds" << endl;
 
+  int added_navs = 0;
   int i = 0;
+
   for (auto& mfKv : mutualFunds)
   {
     ++i;
@@ -1001,7 +1085,9 @@ CalculateStatistics(map<long, MutualFund>& mutualFunds)
 }
 
 void
-WriteToCsv(map<long, MutualFund>& mutualFunds, const string& directory)
+WriteToCsv(map<long, MutualFund>& mutualFunds,
+           const string& directory,
+           stringstream& mfCodeLookup)
 {
   cout << "Writing CSVs for " << mutualFunds.size()
        << " mutual funds" << endl;
@@ -1174,16 +1260,26 @@ WriteToCsv(map<long, MutualFund>& mutualFunds, const string& directory)
     out.close();
   }
 
-  string file_name = directory + "/mf_code_names.csv";
-  ofstream out(file_name.c_str());
-
   for (auto& mfKv : mutualFunds)
   {
-    out << to_string(mfKv.first) << ","
-        << mfKv.second.mName
-        << endl;
+    mfCodeLookup << to_string(mfKv.first) << ","
+                 << mfKv.second.mName
+                 << endl;
   }
 
+  cout << "Wrote CSVs for " << mutualFunds.size()
+       << " mutual funds" << endl;
+}
+
+void
+WriteMfCodeLookupToCsv(const string& directory,
+                       const stringstream& mfCodeLookup)
+{
+  cout << "Writing CSV for MF Code lookup" << endl;
+
+  string file_name = directory + "/mf_code_names.csv";
+  ofstream out(file_name.c_str());
+  out << mfCodeLookup.rdbuf();
   out.close();
 
   string file_name1 = directory + "/format.csv";
@@ -1210,8 +1306,7 @@ WriteToCsv(map<long, MutualFund>& mutualFunds, const string& directory)
 
   out1.close();
 
-  cout << "Wrote CSVs for " << mutualFunds.size()
-       << " mutual funds" << endl;
+  cout << "Wrote CSV for MF Code lookup" << endl;
 }
 
 long
@@ -1230,12 +1325,32 @@ main()
 
   const string nav_dir = "nav";
   const string csv_dir = "static/csv";
+  const long MF_BATCH_SIZE = 1000;
 
   vector<string> file_names = GetNavFileNames(nav_dir);
-  map<long, MutualFund> mutual_funds = ReadNavFiles(file_names);
-  AddMissingDates(mutual_funds);
-  CalculateStatistics(mutual_funds);
-  WriteToCsv(mutual_funds, csv_dir);
+  stringstream raw_mf_data = ReadAllNavFiles(file_names);
+  auto res = ReadMFCode(raw_mf_data);
+
+  long min_mf_code = get<0>(res);
+  long max_mf_code = get<1>(res);
+
+  stringstream mf_code_lookup;
+
+  long starting_mf_code = min_mf_code;
+  while (starting_mf_code <= max_mf_code)
+  {
+    long ending_mf_code = min(starting_mf_code + MF_BATCH_SIZE, max_mf_code);
+    map<long, MutualFund> mutual_funds = ReadMFData(raw_mf_data,
+                                                    starting_mf_code,
+                                                    ending_mf_code);
+    AddMissingDates(mutual_funds);
+    CalculateStatistics(mutual_funds);
+    WriteToCsv(mutual_funds, csv_dir, mf_code_lookup);
+
+    starting_mf_code = ending_mf_code + 1;
+  }
+
+  WriteMfCodeLookupToCsv(csv_dir, mf_code_lookup);
 
   long end_secs = GetCurrentTimeSecs();
   cout << "Time taken: "
