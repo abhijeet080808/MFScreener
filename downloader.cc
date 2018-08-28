@@ -1325,7 +1325,7 @@ main()
 
   const string nav_dir = "nav";
   const string csv_dir = "static/csv";
-  const long MF_BATCH_SIZE = 1000;
+  const long MF_BATCH_SIZE = 10000;
 
   vector<string> file_names = GetNavFileNames(nav_dir);
   stringstream raw_mf_data = ReadAllNavFiles(file_names);
