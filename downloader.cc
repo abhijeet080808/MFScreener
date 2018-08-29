@@ -19,66 +19,42 @@ public:
   {
     NAV,
 
+    ONE_MNTH_NAV_AVG,
+
     ONE_YR_NAV_CAGR,
     THREE_YR_NAV_CAGR,
     FIVE_YR_NAV_CAGR,
 
-    ONE_YR_NAV_AVG,
-    THREE_YR_NAV_AVG,
-    FIVE_YR_NAV_AVG,
-
-    ONE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR,
-    THREE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR,
-    FIVE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR,
-
-    ONE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR,
-    THREE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR,
-    FIVE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR,
-
-    ONE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR,
-    THREE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR,
-    FIVE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR,
+    TWO_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR,
+    FOUR_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR,
   };
 
 public:
   MutualFundData(double nav)
     : mpNav(new double(nav)),
+      mpOneMnthNavAvg(nullptr),
       mpOneYrNavCagr(nullptr),
       mpThreeYrNavCagr(nullptr),
       mpFiveYrNavCagr(nullptr),
-      mpOneYrNavAvg(nullptr),
-      mpThreeYrNavAvg(nullptr),
-      mpFiveYrNavAvg(nullptr),
-      mpOneYrVarSumForOneYrNavCagr(nullptr),
-      mpThreeYrVarSumForOneYrNavCagr(nullptr),
-      mpFiveYrVarSumForOneYrNavCagr(nullptr),
-      mpOneYrVarSumForThreeYrNavCagr(nullptr),
-      mpThreeYrVarSumForThreeYrNavCagr(nullptr),
-      mpFiveYrVarSumForThreeYrNavCagr(nullptr),
-      mpOneYrVarSumForFiveYrNavCagr(nullptr),
-      mpThreeYrVarSumForFiveYrNavCagr(nullptr),
-      mpFiveYrVarSumForFiveYrNavCagr(nullptr)
+      mpTwoYrVarSumForOneYrNavCagr(nullptr),
+      mpFourYrVarSumForOneYrNavCagr(nullptr)
   {
   }
 
   MutualFundData(const MutualFundData &d)
     : mpNav(new double(*d.mpNav)),
+      mpOneMnthNavAvg(nullptr),
       mpOneYrNavCagr(nullptr),
       mpThreeYrNavCagr(nullptr),
       mpFiveYrNavCagr(nullptr),
-      mpOneYrNavAvg(nullptr),
-      mpThreeYrNavAvg(nullptr),
-      mpFiveYrNavAvg(nullptr),
-      mpOneYrVarSumForOneYrNavCagr(nullptr),
-      mpThreeYrVarSumForOneYrNavCagr(nullptr),
-      mpFiveYrVarSumForOneYrNavCagr(nullptr),
-      mpOneYrVarSumForThreeYrNavCagr(nullptr),
-      mpThreeYrVarSumForThreeYrNavCagr(nullptr),
-      mpFiveYrVarSumForThreeYrNavCagr(nullptr),
-      mpOneYrVarSumForFiveYrNavCagr(nullptr),
-      mpThreeYrVarSumForFiveYrNavCagr(nullptr),
-      mpFiveYrVarSumForFiveYrNavCagr(nullptr)
+      mpTwoYrVarSumForOneYrNavCagr(nullptr),
+      mpFourYrVarSumForOneYrNavCagr(nullptr)
   {
+    if (d.mpOneMnthNavAvg)
+    {
+      mpOneMnthNavAvg = new double(*d.mpOneMnthNavAvg);
+    }
+
     if (d.mpOneYrNavCagr)
     {
       mpOneYrNavCagr = new double(*d.mpOneYrNavCagr);
@@ -92,65 +68,15 @@ public:
       mpFiveYrNavCagr = new double(*d.mpFiveYrNavCagr);
     }
 
-    if (d.mpOneYrNavAvg)
+    if (d.mpTwoYrVarSumForOneYrNavCagr)
     {
-      mpOneYrNavAvg = new double(*d.mpOneYrNavAvg);
+      mpTwoYrVarSumForOneYrNavCagr =
+        new double(*d.mpTwoYrVarSumForOneYrNavCagr);
     }
-    if (d.mpThreeYrNavAvg)
+    if (d.mpFourYrVarSumForOneYrNavCagr)
     {
-      mpThreeYrNavAvg = new double(*d.mpThreeYrNavAvg);
-    }
-    if (d.mpFiveYrNavAvg)
-    {
-      mpFiveYrNavAvg = new double(*d.mpFiveYrNavAvg);
-    }
-
-    if (d.mpOneYrVarSumForOneYrNavCagr)
-    {
-      mpOneYrVarSumForOneYrNavCagr =
-        new double(*d.mpOneYrVarSumForOneYrNavCagr);
-    }
-    if (d.mpThreeYrVarSumForOneYrNavCagr)
-    {
-      mpThreeYrVarSumForOneYrNavCagr =
-        new double(*d.mpThreeYrVarSumForOneYrNavCagr);
-    }
-    if (d.mpFiveYrVarSumForOneYrNavCagr)
-    {
-      mpFiveYrVarSumForOneYrNavCagr =
-        new double(*d.mpFiveYrVarSumForOneYrNavCagr);
-    }
-
-    if (d.mpOneYrVarSumForThreeYrNavCagr)
-    {
-      mpOneYrVarSumForThreeYrNavCagr =
-        new double(*d.mpOneYrVarSumForThreeYrNavCagr);
-    }
-    if (d.mpThreeYrVarSumForThreeYrNavCagr)
-    {
-      mpThreeYrVarSumForThreeYrNavCagr =
-        new double(*d.mpThreeYrVarSumForThreeYrNavCagr);
-    }
-    if (d.mpFiveYrVarSumForThreeYrNavCagr)
-    {
-      mpFiveYrVarSumForThreeYrNavCagr =
-        new double(*d.mpFiveYrVarSumForThreeYrNavCagr);
-    }
-
-    if (d.mpOneYrVarSumForFiveYrNavCagr)
-    {
-      mpOneYrVarSumForFiveYrNavCagr =
-        new double(*d.mpOneYrVarSumForFiveYrNavCagr);
-    }
-    if (d.mpThreeYrVarSumForFiveYrNavCagr)
-    {
-      mpThreeYrVarSumForFiveYrNavCagr =
-        new double(*d.mpThreeYrVarSumForFiveYrNavCagr);
-    }
-   if (d.mpFiveYrVarSumForFiveYrNavCagr)
-    {
-      mpFiveYrVarSumForFiveYrNavCagr =
-        new double(*d.mpFiveYrVarSumForFiveYrNavCagr);
+      mpFourYrVarSumForOneYrNavCagr =
+        new double(*d.mpFourYrVarSumForOneYrNavCagr);
     }
   }
 
@@ -158,25 +84,14 @@ public:
   {
     delete mpNav;
 
+    delete mpOneMnthNavAvg;
+
     delete mpOneYrNavCagr;
     delete mpThreeYrNavCagr;
     delete mpFiveYrNavCagr;
 
-    delete mpOneYrNavAvg;
-    delete mpThreeYrNavAvg;
-    delete mpFiveYrNavAvg;
-
-    delete mpOneYrVarSumForOneYrNavCagr;
-    delete mpThreeYrVarSumForOneYrNavCagr;
-    delete mpFiveYrVarSumForOneYrNavCagr;
-
-    delete mpOneYrVarSumForThreeYrNavCagr;
-    delete mpThreeYrVarSumForThreeYrNavCagr;
-    delete mpFiveYrVarSumForThreeYrNavCagr;
-
-    delete mpOneYrVarSumForFiveYrNavCagr;
-    delete mpThreeYrVarSumForFiveYrNavCagr;
-    delete mpFiveYrVarSumForFiveYrNavCagr;
+    delete mpTwoYrVarSumForOneYrNavCagr;
+    delete mpFourYrVarSumForOneYrNavCagr;
   }
 
   MutualFundData& operator=(const MutualFundData&) = delete;
@@ -188,6 +103,9 @@ public:
       case TYPE::NAV:
         return mpNav;
 
+      case TYPE::ONE_MNTH_NAV_AVG:
+        return mpOneMnthNavAvg;
+
       case TYPE::ONE_YR_NAV_CAGR:
         return mpOneYrNavCagr;
       case TYPE::THREE_YR_NAV_CAGR:
@@ -195,33 +113,10 @@ public:
       case TYPE::FIVE_YR_NAV_CAGR:
         return mpFiveYrNavCagr;
 
-      case TYPE::ONE_YR_NAV_AVG:
-        return mpOneYrNavAvg;
-      case TYPE::THREE_YR_NAV_AVG:
-        return mpThreeYrNavAvg;
-      case TYPE::FIVE_YR_NAV_AVG:
-        return mpFiveYrNavAvg;
-
-      case TYPE::ONE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR:
-        return mpOneYrVarSumForOneYrNavCagr;
-      case TYPE::THREE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR:
-        return mpThreeYrVarSumForOneYrNavCagr;
-      case TYPE::FIVE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR:
-        return mpFiveYrVarSumForOneYrNavCagr;
-
-      case TYPE::ONE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR:
-        return mpOneYrVarSumForThreeYrNavCagr;
-      case TYPE::THREE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR:
-        return mpThreeYrVarSumForThreeYrNavCagr;
-      case TYPE::FIVE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR:
-        return mpFiveYrVarSumForThreeYrNavCagr;
-
-      case TYPE::ONE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR:
-        return mpOneYrVarSumForFiveYrNavCagr;
-      case TYPE::THREE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR:
-        return mpThreeYrVarSumForFiveYrNavCagr;
-      case TYPE::FIVE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR:
-        return mpFiveYrVarSumForFiveYrNavCagr;
+      case TYPE::TWO_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR:
+        return mpTwoYrVarSumForOneYrNavCagr;
+      case TYPE::FOUR_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR:
+        return mpFourYrVarSumForOneYrNavCagr;
 
       default:
         assert(false);
@@ -232,6 +127,10 @@ public:
   {
     switch (type)
     {
+      case TYPE::ONE_MNTH_NAV_AVG:
+        mpOneMnthNavAvg = new double(val);
+        break;
+
       case TYPE::ONE_YR_NAV_CAGR:
         mpOneYrNavCagr = new double(val);
         break;
@@ -242,44 +141,11 @@ public:
         mpFiveYrNavCagr = new double(val);
         break;
 
-      case TYPE::ONE_YR_NAV_AVG:
-        mpOneYrNavAvg = new double(val);
+      case TYPE::TWO_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR:
+        mpTwoYrVarSumForOneYrNavCagr = new double(val);
         break;
-      case TYPE::THREE_YR_NAV_AVG:
-        mpThreeYrNavAvg = new double(val);
-        break;
-      case TYPE::FIVE_YR_NAV_AVG:
-        mpFiveYrNavAvg = new double(val);
-        break;
-
-      case TYPE::ONE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR:
-        mpOneYrVarSumForOneYrNavCagr = new double(val);
-        break;
-      case TYPE::THREE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR:
-        mpThreeYrVarSumForOneYrNavCagr = new double(val);
-        break;
-      case TYPE::FIVE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR:
-        mpFiveYrVarSumForOneYrNavCagr = new double(val);
-        break;
-
-      case TYPE::ONE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR:
-        mpOneYrVarSumForThreeYrNavCagr = new double(val);
-        break;
-      case TYPE::THREE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR:
-        mpThreeYrVarSumForThreeYrNavCagr = new double(val);
-        break;
-      case TYPE::FIVE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR:
-        mpFiveYrVarSumForThreeYrNavCagr = new double(val);
-        break;
-
-      case TYPE::ONE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR:
-        mpOneYrVarSumForFiveYrNavCagr = new double(val);
-        break;
-      case TYPE::THREE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR:
-        mpThreeYrVarSumForFiveYrNavCagr = new double(val);
-        break;
-      case TYPE::FIVE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR:
-        mpFiveYrVarSumForFiveYrNavCagr = new double(val);
+      case TYPE::FOUR_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR:
+        mpFourYrVarSumForOneYrNavCagr = new double(val);
         break;
 
       default:
@@ -290,25 +156,14 @@ public:
 private:
   double* mpNav;
 
+  double* mpOneMnthNavAvg;
+
   double* mpOneYrNavCagr;
   double* mpThreeYrNavCagr;
   double* mpFiveYrNavCagr;
 
-  double* mpOneYrNavAvg;
-  double* mpThreeYrNavAvg;
-  double* mpFiveYrNavAvg;
-
-  double* mpOneYrVarSumForOneYrNavCagr;
-  double* mpThreeYrVarSumForOneYrNavCagr;
-  double* mpFiveYrVarSumForOneYrNavCagr;
-
-  double* mpOneYrVarSumForThreeYrNavCagr;
-  double* mpThreeYrVarSumForThreeYrNavCagr;
-  double* mpFiveYrVarSumForThreeYrNavCagr;
-
-  double* mpOneYrVarSumForFiveYrNavCagr;
-  double* mpThreeYrVarSumForFiveYrNavCagr;
-  double* mpFiveYrVarSumForFiveYrNavCagr;
+  double* mpTwoYrVarSumForOneYrNavCagr;
+  double* mpFourYrVarSumForOneYrNavCagr;
 };
 
 class MutualFund
@@ -448,7 +303,7 @@ ReadMFCode(stringstream& rawMfData)
   long min_mf_code = *mf_codes.begin();
   long max_mf_code = *mf_codes.rbegin();
 
-  cout << "Read " << mf_codes.size() << " mutual funds "
+  cout << "Read " << mf_codes.size() << " mutual funds"
        << " with minimum MF Code " << min_mf_code
        << " and maximum MF Code " << max_mf_code
        << endl;
@@ -812,47 +667,31 @@ CalculateStatistics(map<long, MutualFund>& mutualFunds)
     }
 
     double one_yr_nav_rolling_total = 0;
-    double three_yr_nav_rolling_total = 0;
-    double five_yr_nav_rolling_total = 0;
 
-    double one_yr_rolling_total_for_one_yr_nav_cagr = 0;
-    double prev_one_yr_var_sum_for_one_yr_nav_cagr = 0;
-    double prev_one_yr_avg_for_one_yr_nav_cagr = 0;
+    double two_yr_rolling_total_for_one_yr_nav_cagr = 0;
+    double prev_two_yr_var_sum_for_one_yr_nav_cagr = 0;
+    double prev_two_yr_avg_for_one_yr_nav_cagr = 0;
 
-    double three_yr_rolling_total_for_one_yr_nav_cagr = 0;
-    double prev_three_yr_var_sum_for_one_yr_nav_cagr = 0;
-    double prev_three_yr_avg_for_one_yr_nav_cagr = 0;
-
-    double five_yr_rolling_total_for_one_yr_nav_cagr = 0;
-    double prev_five_yr_var_sum_for_one_yr_nav_cagr = 0;
-    double prev_five_yr_avg_for_one_yr_nav_cagr = 0;
-
-    double one_yr_rolling_total_for_three_yr_nav_cagr = 0;
-    double prev_one_yr_var_sum_for_three_yr_nav_cagr = 0;
-    double prev_one_yr_avg_for_three_yr_nav_cagr = 0;
-
-    double three_yr_rolling_total_for_three_yr_nav_cagr = 0;
-    double prev_three_yr_var_sum_for_three_yr_nav_cagr = 0;
-    double prev_three_yr_avg_for_three_yr_nav_cagr = 0;
-
-    double five_yr_rolling_total_for_three_yr_nav_cagr = 0;
-    double prev_five_yr_var_sum_for_three_yr_nav_cagr = 0;
-    double prev_five_yr_avg_for_three_yr_nav_cagr = 0;
-
-    double one_yr_rolling_total_for_five_yr_nav_cagr = 0;
-    double prev_one_yr_var_sum_for_five_yr_nav_cagr = 0;
-    double prev_one_yr_avg_for_five_yr_nav_cagr = 0;
-
-    double three_yr_rolling_total_for_five_yr_nav_cagr = 0;
-    double prev_three_yr_var_sum_for_five_yr_nav_cagr = 0;
-    double prev_three_yr_avg_for_five_yr_nav_cagr = 0;
-
-    double five_yr_rolling_total_for_five_yr_nav_cagr = 0;
-    double prev_five_yr_var_sum_for_five_yr_nav_cagr = 0;
-    double prev_five_yr_avg_for_five_yr_nav_cagr = 0;
+    double four_yr_rolling_total_for_one_yr_nav_cagr = 0;
+    double prev_four_yr_var_sum_for_one_yr_nav_cagr = 0;
+    double prev_four_yr_avg_for_one_yr_nav_cagr = 0;
 
     for (auto& dataKv : mfKv.second.mData)
     {
+      // NAV AVG ----------------------------------------------------
+      {
+        auto res = CalculateAverage(mfKv.second.mData, dataKv.first,
+                                    MutualFundData::TYPE::NAV,
+                                    one_yr_nav_rolling_total,
+                                    30);
+        if (get<0>(res))
+        {
+          mfKv.second.mData.at(
+            dataKv.first - boost::gregorian::date_duration(15)).Set(
+              MutualFundData::TYPE::ONE_MNTH_NAV_AVG, get<1>(res));
+        }
+      }
+
       // NAV CAGR ---------------------------------------------------
       {
         auto res = CalculateCagr(mfKv.second.mData, dataKv.first,
@@ -881,54 +720,21 @@ CalculateStatistics(map<long, MutualFund>& mutualFunds)
                             get<1>(res));
         }
       }
-      // NAV AVG ----------------------------------------------------
-      {
-        auto res = CalculateAverage(mfKv.second.mData, dataKv.first,
-                                    MutualFundData::TYPE::NAV,
-                                    one_yr_nav_rolling_total,
-                                    365);
-        if (get<0>(res))
-        {
-          dataKv.second.Set(MutualFundData::TYPE::ONE_YR_NAV_AVG,
-                            get<1>(res));
-        }
-      }
-      {
-        auto res = CalculateAverage(mfKv.second.mData, dataKv.first,
-                                    MutualFundData::TYPE::NAV,
-                                    three_yr_nav_rolling_total,
-                                    1095);
-        if (get<0>(res))
-        {
-          dataKv.second.Set(MutualFundData::TYPE::THREE_YR_NAV_AVG,
-                            get<1>(res));
-        }
-      }
-      {
-        auto res = CalculateAverage(mfKv.second.mData, dataKv.first,
-                                    MutualFundData::TYPE::NAV,
-                                    five_yr_nav_rolling_total,
-                                    1825);
-        if (get<0>(res))
-        {
-          dataKv.second.Set(MutualFundData::TYPE::FIVE_YR_NAV_AVG,
-                            get<1>(res));
-        }
-      }
+
       // DEVIATION OF 1 YR CAGR -------------------------------------
       {
         auto res = CalculateAverageAndVarianceSum(
             mfKv.second.mData, dataKv.first,
             MutualFundData::TYPE::ONE_YR_NAV_CAGR,
-            one_yr_rolling_total_for_one_yr_nav_cagr,
-            prev_one_yr_var_sum_for_one_yr_nav_cagr,
-            prev_one_yr_avg_for_one_yr_nav_cagr,
-            365);
+            two_yr_rolling_total_for_one_yr_nav_cagr,
+            prev_two_yr_var_sum_for_one_yr_nav_cagr,
+            prev_two_yr_avg_for_one_yr_nav_cagr,
+            730);
 
         if (get<0>(res))
         {
           dataKv.second.Set(
-              MutualFundData::TYPE::ONE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR,
+              MutualFundData::TYPE::TWO_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR,
               get<1>(res));
         }
       }
@@ -936,129 +742,15 @@ CalculateStatistics(map<long, MutualFund>& mutualFunds)
         auto res = CalculateAverageAndVarianceSum(
             mfKv.second.mData, dataKv.first,
             MutualFundData::TYPE::ONE_YR_NAV_CAGR,
-            three_yr_rolling_total_for_one_yr_nav_cagr,
-            prev_three_yr_var_sum_for_one_yr_nav_cagr,
-            prev_three_yr_avg_for_one_yr_nav_cagr,
-            1095);
+            four_yr_rolling_total_for_one_yr_nav_cagr,
+            prev_four_yr_var_sum_for_one_yr_nav_cagr,
+            prev_four_yr_avg_for_one_yr_nav_cagr,
+            1460);
 
         if (get<0>(res))
         {
           dataKv.second.Set(
-              MutualFundData::TYPE::THREE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR,
-              get<1>(res));
-        }
-      }
-      {
-        auto res = CalculateAverageAndVarianceSum(
-            mfKv.second.mData, dataKv.first,
-            MutualFundData::TYPE::ONE_YR_NAV_CAGR,
-            five_yr_rolling_total_for_one_yr_nav_cagr,
-            prev_five_yr_var_sum_for_one_yr_nav_cagr,
-            prev_five_yr_avg_for_one_yr_nav_cagr,
-            1825);
-
-        if (get<0>(res))
-        {
-          dataKv.second.Set(
-              MutualFundData::TYPE::FIVE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR,
-              get<1>(res));
-        }
-      }
-      // DEVIATION OF 3 YR CAGR -------------------------------------
-      {
-        auto res = CalculateAverageAndVarianceSum(
-            mfKv.second.mData, dataKv.first,
-            MutualFundData::TYPE::THREE_YR_NAV_CAGR,
-            one_yr_rolling_total_for_three_yr_nav_cagr,
-            prev_one_yr_var_sum_for_three_yr_nav_cagr,
-            prev_one_yr_avg_for_three_yr_nav_cagr,
-            365);
-
-        if (get<0>(res))
-        {
-          dataKv.second.Set(
-              MutualFundData::TYPE::ONE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR,
-              get<1>(res));
-        }
-      }
-      {
-        auto res = CalculateAverageAndVarianceSum(
-            mfKv.second.mData, dataKv.first,
-            MutualFundData::TYPE::THREE_YR_NAV_CAGR,
-            three_yr_rolling_total_for_three_yr_nav_cagr,
-            prev_three_yr_var_sum_for_three_yr_nav_cagr,
-            prev_three_yr_avg_for_three_yr_nav_cagr,
-            1095);
-
-        if (get<0>(res))
-        {
-          dataKv.second.Set(
-              MutualFundData::TYPE::THREE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR,
-              get<1>(res));
-        }
-      }
-      {
-        auto res = CalculateAverageAndVarianceSum(
-            mfKv.second.mData, dataKv.first,
-            MutualFundData::TYPE::THREE_YR_NAV_CAGR,
-            five_yr_rolling_total_for_three_yr_nav_cagr,
-            prev_five_yr_var_sum_for_three_yr_nav_cagr,
-            prev_five_yr_avg_for_three_yr_nav_cagr,
-            1825);
-
-        if (get<0>(res))
-        {
-          dataKv.second.Set(
-              MutualFundData::TYPE::FIVE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR,
-              get<1>(res));
-        }
-      }
-      // DEVIATION OF 5 YR CAGR -------------------------------------
-      {
-        auto res = CalculateAverageAndVarianceSum(
-            mfKv.second.mData, dataKv.first,
-            MutualFundData::TYPE::FIVE_YR_NAV_CAGR,
-            one_yr_rolling_total_for_five_yr_nav_cagr,
-            prev_one_yr_var_sum_for_five_yr_nav_cagr,
-            prev_one_yr_avg_for_five_yr_nav_cagr,
-            365);
-
-        if (get<0>(res))
-        {
-          dataKv.second.Set(
-              MutualFundData::TYPE::ONE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR,
-              get<1>(res));
-        }
-      }
-      {
-        auto res = CalculateAverageAndVarianceSum(
-            mfKv.second.mData, dataKv.first,
-            MutualFundData::TYPE::FIVE_YR_NAV_CAGR,
-            three_yr_rolling_total_for_five_yr_nav_cagr,
-            prev_three_yr_var_sum_for_five_yr_nav_cagr,
-            prev_three_yr_avg_for_five_yr_nav_cagr,
-            1095);
-
-        if (get<0>(res))
-        {
-          dataKv.second.Set(
-              MutualFundData::TYPE::THREE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR,
-              get<1>(res));
-        }
-      }
-      {
-        auto res = CalculateAverageAndVarianceSum(
-            mfKv.second.mData, dataKv.first,
-            MutualFundData::TYPE::FIVE_YR_NAV_CAGR,
-            five_yr_rolling_total_for_five_yr_nav_cagr,
-            prev_five_yr_var_sum_for_five_yr_nav_cagr,
-            prev_five_yr_avg_for_five_yr_nav_cagr,
-            1825);
-
-        if (get<0>(res))
-        {
-          dataKv.second.Set(
-              MutualFundData::TYPE::FIVE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR,
+              MutualFundData::TYPE::FOUR_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR,
               get<1>(res));
         }
       }
@@ -1097,6 +789,15 @@ WriteToCsv(map<long, MutualFund>& mutualFunds,
           << *dataKv.second.Get(MutualFundData::TYPE::NAV) << ",";
 
       {
+        auto data = dataKv.second.Get(MutualFundData::TYPE::ONE_MNTH_NAV_AVG);
+        if (data != nullptr)
+        {
+          out << *data;
+        }
+      }
+
+      out << ",";
+      {
         auto data = dataKv.second.Get(MutualFundData::TYPE::ONE_YR_NAV_CAGR);
         if (data != nullptr)
         {
@@ -1124,118 +825,21 @@ WriteToCsv(map<long, MutualFund>& mutualFunds,
 
       out << ",";
       {
-        auto data = dataKv.second.Get(MutualFundData::TYPE::ONE_YR_NAV_AVG);
+        auto data = dataKv.second.Get(
+            MutualFundData::TYPE::TWO_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR);
         if (data != nullptr)
         {
-          out << *data;
-        }
-      }
-
-      out << ",";
-      {
-        auto data = dataKv.second.Get(MutualFundData::TYPE::THREE_YR_NAV_AVG);
-        if (data != nullptr)
-        {
-          out << *data;
-        }
-      }
-
-      out << ",";
-      {
-        auto data = dataKv.second.Get(MutualFundData::TYPE::FIVE_YR_NAV_AVG);
-        if (data != nullptr)
-        {
-          out << *data;
+          out << pow(*data / 730.0f, 0.5f);
         }
       }
 
       out << ",";
       {
         auto data = dataKv.second.Get(
-            MutualFundData::TYPE::ONE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR);
+            MutualFundData::TYPE::FOUR_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR);
         if (data != nullptr)
         {
-          out << pow(*data / 365.0f, 0.5f);
-        }
-      }
-
-      out << ",";
-      {
-        auto data = dataKv.second.Get(
-            MutualFundData::TYPE::THREE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR);
-        if (data != nullptr)
-        {
-          out << pow(*data / 1095.0f, 0.5f);
-        }
-      }
-
-      out << ",";
-      {
-        auto data = dataKv.second.Get(
-            MutualFundData::TYPE::FIVE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR);
-        if (data != nullptr)
-        {
-          out << pow(*data / 1825.0f, 0.5f);
-        }
-      }
-
-      out << ",";
-      {
-        auto data = dataKv.second.Get(
-            MutualFundData::TYPE::ONE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR);
-        if (data != nullptr)
-        {
-          out << pow(*data / 365.0f, 0.5f);
-        }
-      }
-
-      out << ",";
-      {
-        auto data = dataKv.second.Get(
-            MutualFundData::TYPE::THREE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR);
-        if (data != nullptr)
-        {
-          out << pow(*data / 1095.0f, 0.5f);
-        }
-      }
-
-      out << ",";
-      {
-        auto data = dataKv.second.Get(
-            MutualFundData::TYPE::FIVE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR);
-        if (data != nullptr)
-        {
-          out << pow(*data / 1825.0f, 0.5f);
-        }
-      }
-
-      out << ",";
-      {
-        auto data = dataKv.second.Get(
-            MutualFundData::TYPE::ONE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR);
-        if (data != nullptr)
-        {
-          out << pow(*data / 365.0f, 0.5f);
-        }
-      }
-
-      out << ",";
-      {
-        auto data = dataKv.second.Get(
-            MutualFundData::TYPE::THREE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR);
-        if (data != nullptr)
-        {
-          out << pow(*data / 1095.0f, 0.5f);
-        }
-      }
-
-      out << ",";
-      {
-        auto data = dataKv.second.Get(
-            MutualFundData::TYPE::FIVE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR);
-        if (data != nullptr)
-        {
-          out << pow(*data / 1825.0f, 0.5f);
+          out << pow(*data / 1460.0f, 0.5f);
         }
       }
 
@@ -1272,21 +876,12 @@ WriteMfCodeLookupToCsv(const string& directory,
 
   out1 << "Date,"
        << "NAV,"                          // 0
-       << "1 Yr Cagr,"                    // 1
-       << "3 Yr Cagr,"                    // 2
-       << "5 Yr Cagr,"                    // 3
-       << "1 Yr Avg,"                     // 4
-       << "3 Yr Avg,"                     // 5
-       << "5 Yr Avg,"                     // 6
-       << "1 Yr Std Dev of 1 Yr Cagr,"    // 7
-       << "3 Yr Std Dev of 1 Yr Cagr,"    // 8
-       << "5 Yr Std Dev of 1 Yr Cagr,"    // 9
-       << "1 Yr Std Dev of 3 Yr Cagr,"    // 10
-       << "3 Yr Std Dev of 3 Yr Cagr,"    // 11
-       << "5 Yr Std Dev of 3 Yr Cagr,"    // 12
-       << "1 Yr Std Dev of 5 Yr Cagr,"    // 13
-       << "3 Yr Std Dev of 5 Yr Cagr,"    // 14
-       << "5 Yr Std Dev of 5 Yr Cagr"     // 15
+       << "1 Mnth Avg,"                   // 1
+       << "1 Yr Cagr,"                    // 2
+       << "3 Yr Cagr,"                    // 3
+       << "5 Yr Cagr,"                    // 4
+       << "2 Yr Std Dev of 1 Yr Cagr,"    // 5
+       << "4 Yr Std Dev of 1 Yr Cagr,"    // 6
        << endl;
 
   out1.close();

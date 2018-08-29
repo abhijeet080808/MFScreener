@@ -31,6 +31,16 @@ function getChartColor() {
   return chroma("black");
 }
 
+function getAlphaColor(hexColor, alpha) {
+  var color = "rgba(" +
+    chroma(hexColor).get('rgb.r') + "," +
+    chroma(hexColor).get('rgb.g') + "," +
+    chroma(hexColor).get('rgb.b') + "," +
+    alpha + ")";
+
+  return color;
+}
+
 function addLabels(chartConfig, startDate, endDate, periodicity) {
   // empty labels
   chartConfig.data.labels = [];
@@ -95,26 +105,15 @@ function addChart(mfCode, csvData, hiddenCharts, mfColor) {
     hexColor = mfColor;
   }
 
-  var color1 = "rgba(" +
-               chroma(hexColor).get('rgb.r') + "," +
-               chroma(hexColor).get('rgb.g') + "," +
-               chroma(hexColor).get('rgb.b') + "," +
-               "0.2)";
-  var color2 = "rgba(" +
-               chroma(hexColor).get('rgb.r') + "," +
-               chroma(hexColor).get('rgb.g') + "," +
-               chroma(hexColor).get('rgb.b') + "," +
-               "0.6)";
-
   // https://www.chartjs.org/docs/latest/charts/line.html
   // https://stackoverflow.com/questions/38085352/
   // how-to-use-two-y-axes-in-chart-js-v2
   var navDataset = {
-    label: "NAV - " + mfCode,
+    label: mfCode + " - Nav",
     data: [],
     yAxisID: "NAV",
-    backgroundColor: color2,
-    borderColor: color2,
+    backgroundColor: getAlphaColor(hexColor, 0.2),
+    borderColor: getAlphaColor(hexColor, 0.2),
     borderWidth: 2,
     //borderDash: [2, 2],
     fill: false,
@@ -128,11 +127,11 @@ function addChart(mfCode, csvData, hiddenCharts, mfColor) {
   }
 
   var avgNavDataset = {
-    label: "1 Yr Avg NAV - " + mfCode,
+    label: mfCode + " - 1 Mnth Avg Nav",
     data: [],
     yAxisID: "NAV",
-    backgroundColor: color1,
-    borderColor: color1,
+    backgroundColor: getAlphaColor(hexColor, 0.6),
+    borderColor: getAlphaColor(hexColor, 0.6),
     borderWidth: 2,
     //borderDash: [2, 2],
     fill: false,
@@ -146,11 +145,11 @@ function addChart(mfCode, csvData, hiddenCharts, mfColor) {
   }
 
   var retDataset = {
-    label: "3 Yr Ret - " + mfCode,
+    label: mfCode + " - 3 Yr Cagr",
     data: [],
     yAxisID: "RET",
-    backgroundColor: color2,
-    borderColor: color2,
+    backgroundColor: getAlphaColor(hexColor, 0.6),
+    borderColor: getAlphaColor(hexColor, 0.6),
     borderWidth: 2,
     //borderDash: [2, 2],
     fill: false,
@@ -163,11 +162,11 @@ function addChart(mfCode, csvData, hiddenCharts, mfColor) {
   }
 
   var retVarDataset = {
-    label: "3 Yr Var of 1 Yr Ret - " + mfCode,
+    label: mfCode + " - Std Dev",
     data: [],
     yAxisID: "RET",
-    backgroundColor: color1,
-    borderColor: color1,
+    backgroundColor: getAlphaColor(hexColor, 0.2),
+    borderColor: getAlphaColor(hexColor, 0.2),
     borderWidth: 2,
     //borderDash: [2, 2],
     fill: true,
@@ -207,9 +206,9 @@ function addChart(mfCode, csvData, hiddenCharts, mfColor) {
       } else {
         navDataset.data.push(null);
       }
-      // one year nav value average
-      if (mfVal[4] !== undefined && mfVal[4].length > 0) {
-        avgNavDataset.data.push(mfVal[4]);
+      // one month nav value average
+      if (mfVal[1] !== undefined && mfVal[1].length > 0) {
+        avgNavDataset.data.push(mfVal[1]);
       } else {
         avgNavDataset.data.push(null);
       }
@@ -225,14 +224,14 @@ function addChart(mfCode, csvData, hiddenCharts, mfColor) {
 
     if (mfVal !== undefined) {
       // three year cagr
-      if (mfVal[2] !== undefined && mfVal[2].length > 0) {
-        retDataset.data.push(mfVal[2]);
+      if (mfVal[3] !== undefined && mfVal[3].length > 0) {
+        retDataset.data.push(mfVal[3]);
       } else {
         retDataset.data.push(null);
       }
-      // three year standard deviation of one year cagr
-      if (mfVal[8] !== undefined && mfVal[8].length > 0) {
-        retVarDataset.data.push(mfVal[8]);
+      // two year standard deviation of one year cagr
+      if (mfVal[5] !== undefined && mfVal[5].length > 0) {
+        retVarDataset.data.push(mfVal[5]);
       } else {
         retVarDataset.data.push(null);
       }
@@ -538,7 +537,7 @@ $(function() {
           },
           scaleLabel: {
             display: true,
-            labelString: "NAV/Avg NAV Value"
+            labelString: "Value"
           }
         }]
       }
@@ -572,7 +571,7 @@ $(function() {
           },
           scaleLabel: {
             display: true,
-            labelString: "Ret/Var of Ret Percentage"
+            labelString: "Percentage"
           }
         }]//,{
         //  id: "THREE_YR_STD_DEV",
