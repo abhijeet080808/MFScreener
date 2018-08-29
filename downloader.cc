@@ -233,67 +233,52 @@ public:
     switch (type)
     {
       case TYPE::ONE_YR_NAV_CAGR:
-        assert(mpOneYrNavCagr == nullptr);
         mpOneYrNavCagr = new double(val);
         break;
       case TYPE::THREE_YR_NAV_CAGR:
-        assert(mpThreeYrNavCagr == nullptr);
         mpThreeYrNavCagr = new double(val);
         break;
       case TYPE::FIVE_YR_NAV_CAGR:
-        assert(mpFiveYrNavCagr == nullptr);
         mpFiveYrNavCagr = new double(val);
         break;
 
       case TYPE::ONE_YR_NAV_AVG:
-        assert(mpOneYrNavAvg == nullptr);
         mpOneYrNavAvg = new double(val);
         break;
       case TYPE::THREE_YR_NAV_AVG:
-        assert(mpThreeYrNavAvg == nullptr);
         mpThreeYrNavAvg = new double(val);
         break;
       case TYPE::FIVE_YR_NAV_AVG:
-        assert(mpFiveYrNavAvg == nullptr);
         mpFiveYrNavAvg = new double(val);
         break;
 
       case TYPE::ONE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR:
-        assert(mpOneYrVarSumForOneYrNavCagr == nullptr);
         mpOneYrVarSumForOneYrNavCagr = new double(val);
         break;
       case TYPE::THREE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR:
-        assert(mpThreeYrVarSumForOneYrNavCagr == nullptr);
         mpThreeYrVarSumForOneYrNavCagr = new double(val);
         break;
       case TYPE::FIVE_YR_VARIANCE_SUM_FOR_ONE_YR_NAV_CAGR:
-        assert(mpFiveYrVarSumForOneYrNavCagr == nullptr);
         mpFiveYrVarSumForOneYrNavCagr = new double(val);
         break;
 
       case TYPE::ONE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR:
-        assert(mpOneYrVarSumForThreeYrNavCagr == nullptr);
         mpOneYrVarSumForThreeYrNavCagr = new double(val);
         break;
       case TYPE::THREE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR:
-        assert(mpThreeYrVarSumForThreeYrNavCagr == nullptr);
         mpThreeYrVarSumForThreeYrNavCagr = new double(val);
         break;
       case TYPE::FIVE_YR_VARIANCE_SUM_FOR_THREE_YR_NAV_CAGR:
-        assert(mpFiveYrVarSumForThreeYrNavCagr == nullptr);
         mpFiveYrVarSumForThreeYrNavCagr = new double(val);
         break;
 
       case TYPE::ONE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR:
-        assert(mpOneYrVarSumForFiveYrNavCagr == nullptr);
         mpOneYrVarSumForFiveYrNavCagr = new double(val);
         break;
       case TYPE::THREE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR:
-        assert(mpThreeYrVarSumForFiveYrNavCagr == nullptr);
         mpThreeYrVarSumForFiveYrNavCagr = new double(val);
         break;
       case TYPE::FIVE_YR_VARIANCE_SUM_FOR_FIVE_YR_NAV_CAGR:
-        assert(mpFiveYrVarSumForFiveYrNavCagr == nullptr);
         mpFiveYrVarSumForFiveYrNavCagr = new double(val);
         break;
 
