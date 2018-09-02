@@ -372,7 +372,7 @@ ReadMFData(stringstream& rawMfData,
           fields.at(5).erase(0, fields.at(5).find_first_not_of(" \t\r\n"));
           fields.at(5).erase(fields.at(5).find_last_not_of(" \t\r\n") + 1);
 
-          // remove " and ' from name
+          // remove " ' , \t \n from name
           fields.at(1).erase(remove(fields.at(1).begin(),
                                     fields.at(1).end(),
                                     '\"'),
@@ -380,6 +380,18 @@ ReadMFData(stringstream& rawMfData,
           fields.at(1).erase(remove(fields.at(1).begin(),
                                     fields.at(1).end(),
                                     '\''),
+                             fields.at(1).end());
+          fields.at(1).erase(remove(fields.at(1).begin(),
+                                    fields.at(1).end(),
+                                    ','),
+                             fields.at(1).end());
+          fields.at(1).erase(remove(fields.at(1).begin(),
+                                    fields.at(1).end(),
+                                    '\t'),
+                             fields.at(1).end());
+          fields.at(1).erase(remove(fields.at(1).begin(),
+                                    fields.at(1).end(),
+                                    '\n'),
                              fields.at(1).end());
 
           // remove comma from nav
