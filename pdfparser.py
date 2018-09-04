@@ -8,12 +8,12 @@ import re
 class MfTransaction:
     def __init__(self, mf_date, mf_code, mf_action, mf_units,
                  mf_nav, mf_amount):
-        self.mf_date = mf_date
-        self.mf_code = mf_code
-        self.mf_action = mf_action
-        self.mf_units = mf_units
-        self.mf_nav = mf_nav
-        self.mf_amount = mf_amount
+        self.mf_date = mf_date          # date of transaction
+        self.mf_code = mf_code          # mf code
+        self.mf_action = mf_action      # action is BUY or SELL
+        self.mf_units = mf_units        # mf units bought or sold
+        self.mf_nav = mf_nav            # mf nav on the day
+        self.mf_amount = mf_amount      # amount bought or sold
 
     def __repr__(self):
         return "MfTransaction(" + repr(self.mf_date) + ", " + \
@@ -52,6 +52,7 @@ def ReadMFCodes():
 
 
 def GetSet(mfName):
+    # get a set of all words in the mfName
     mfNameList = list(re.split("\-| ", mfName.strip().lower()))
     mfNameList = [x.strip() for x in mfNameList]
 
@@ -199,6 +200,7 @@ def ParseConsolidatedStatement(mfCodeNames):
                 if transactions.get(mf_date) is None:
                     transactions[mf_date] = dict()
 
+                # each date can have only one transaction for a mf
                 if transactions[mf_date].get(mf_code) is not None:
                     old_t = transactions[mf_date][mf_code]
 
@@ -288,6 +290,25 @@ def ParseConsolidatedStatement(mfCodeNames):
     return transactions
 
 
+def ReadNav(mfCode):
+    # dict of datetime.datetime vs nav
+    mf_navs = dict()
+    print("Reading static/csv/" + str(mfCode) + ".csv")
+    with open("static/csv/" + str(mfCode) + ".csv") as f:
+        content = f.readlines()
+        for line in content:
+            parts = line.split(",")
+            if len(parts) < 2:
+                raise ValueError("Failed to read " + line)
+
+            mf_date = datetime.datetime.strptime(parts[0], "%Y-%m-%d")
+            mf_nav = float(parts[1])
+
+            mf_navs[mf_date] = mf_nav
+
+    return mf_navs
+
+
 def WriteToCsv(transactions):
     start_date = min(transactions.keys())
     end_date = datetime.datetime(datetime.datetime.today().year,
@@ -297,10 +318,13 @@ def WriteToCsv(transactions):
     with open("static/csv/transactions.csv", "w") as f:
         writer = csv.writer(f)
         writer.writerow(["Date", "MF Code", "Action", "Units", "Nav", "Cost",
-                         "Total Units", "Total Cost"])
+                         "Total Units", "Total Cost", "Total Value"])
 
         # dict of mf code vs (list of total units and total amount)
         mf_totals = dict()
+
+        # dict of mf code vs (dict of datetime.datetime vs nav)
+        mf_navs = dict()
 
         curr_date = start_date
         while curr_date <= end_date:
@@ -336,22 +360,40 @@ def WriteToCsv(transactions):
 
             to_be_removed_codes = list()
             for mf_code in sorted(mf_totals):
+
+                # read all navs for the mf if not done before
+                if mf_navs.get(mf_code) is None:
+                    mf_navs[mf_code] = ReadNav(mf_code)
+                # get nav if available
+                current_value = None
+                if mf_navs[mf_code].get(curr_date) is not None:
+                    current_value = round(
+                        mf_totals[mf_code][0] * mf_navs[mf_code][curr_date],
+                        4)
+
                 if day_transactions is None or \
                    day_transactions.get(mf_code) is None:
-                    writer.writerow([curr_date.strftime("%Y-%m-%d"),
-                                     mf_code, "", "", "", "",
-                                     round(mf_totals[mf_code][0], 4),
-                                     round(mf_totals[mf_code][1], 4)])
+                    writer.writerow(
+                        [curr_date.strftime("%Y-%m-%d"),
+                         mf_code, "", "", "", "",
+                         # total units
+                         round(mf_totals[mf_code][0], 4),
+                         # total invested amount
+                         round(mf_totals[mf_code][1], 4),
+                         # total current value
+                         current_value])
                 else:
                     t = day_transactions[mf_code]
-                    writer.writerow([t.mf_date.strftime("%Y-%m-%d"),
-                                     t.mf_code,
-                                     t.mf_action,
-                                     t.mf_units,
-                                     t.mf_nav,
-                                     t.mf_amount,
-                                     round(mf_totals[t.mf_code][0], 4),
-                                     round(mf_totals[t.mf_code][1], 4)])
+                    writer.writerow(
+                        [t.mf_date.strftime("%Y-%m-%d"),
+                         t.mf_code,
+                         t.mf_action,
+                         t.mf_units,
+                         t.mf_nav,
+                         t.mf_amount,
+                         round(mf_totals[t.mf_code][0], 4),
+                         round(mf_totals[t.mf_code][1], 4),
+                         current_value])
 
                 # remove this entry if there are no units left after SELL
                 if abs(mf_totals[mf_code][0]) < 0.001:
@@ -361,6 +403,8 @@ def WriteToCsv(transactions):
                 del(mf_totals[mf_code])
 
             curr_date = curr_date + datetime.timedelta(days=1)
+
+    print("Wrote all transactions")
 
 
 def main():
