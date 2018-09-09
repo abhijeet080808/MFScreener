@@ -3,6 +3,7 @@
 import csv
 import datetime
 import re
+import scipy.optimize
 
 
 class MfTransaction:
@@ -318,19 +319,25 @@ def WriteToCsv(transactions):
     with open("static/csv/transactions.csv", "w") as f:
         writer = csv.writer(f)
         writer.writerow(["Date", "MF Code", "Action", "Units", "Nav", "Cost",
-                         "Total Units", "Total Cost", "Total Value"])
+                         "Total Units", "Total Cost", "Total Value", "XIRR"])
 
-        # dict of mf code vs (list of total units and total amount)
+        # dict of mf code vs (list of total units and total cost amount)
         mf_totals = dict()
 
         # dict of mf code vs (dict of datetime.datetime vs nav)
         mf_navs = dict()
+
+        # list of (tuple of date and amount) for all transactions per day
+        mf_transactions = list()
 
         curr_date = start_date
         while curr_date <= end_date:
             day_transactions = transactions.get(curr_date)
 
             if day_transactions is not None:
+                # negative for net buy, positive for net sell
+                total_amount = 0;
+
                 for mf_code in sorted(day_transactions):
                     t = day_transactions[mf_code]
 
@@ -338,6 +345,7 @@ def WriteToCsv(transactions):
                     if mf_totals.get(t.mf_code) is None:
                         if t.mf_action == "BUY":
                             mf_totals[t.mf_code] = [t.mf_units, t.mf_amount]
+                            total_amount -= t.mf_amount
                         else:
                             raise ValueError(str(t.mf_code) + " has SELL on " +
                                              str(t.mf_date))
@@ -347,6 +355,7 @@ def WriteToCsv(transactions):
                                 mf_totals[t.mf_code][0] + t.mf_units
                             mf_totals[t.mf_code][1] = \
                                 mf_totals[t.mf_code][1] + t.mf_amount
+                            total_amount -= t.mf_amount
                         else: # SELL
                             # nav = amount / units
                             combined_buy_nav = \
@@ -357,19 +366,32 @@ def WriteToCsv(transactions):
                                 mf_totals[t.mf_code][0] - t.mf_units
                             mf_totals[t.mf_code][1] = \
                                 mf_totals[t.mf_code][0] * combined_buy_nav
+                            total_amount += t.mf_amount
+
+                # add this day's cummulative transaction
+                mf_transactions.append((curr_date, total_amount))
 
             to_be_removed_codes = list()
+
+            # total current value
+            total_value = 0
+            got_all_nav_values = True
+
             for mf_code in sorted(mf_totals):
 
                 # read all navs for the mf if not done before
                 if mf_navs.get(mf_code) is None:
                     mf_navs[mf_code] = ReadNav(mf_code)
-                # get nav if available
+
+                # get current value if nav is available
                 current_value = None
                 if mf_navs[mf_code].get(curr_date) is not None:
                     current_value = round(
                         mf_totals[mf_code][0] * mf_navs[mf_code][curr_date],
                         4)
+                    total_value += current_value
+                else:
+                    got_all_nav_values = False
 
                 if day_transactions is None or \
                    day_transactions.get(mf_code) is None:
@@ -381,7 +403,8 @@ def WriteToCsv(transactions):
                          # total invested amount
                          round(mf_totals[mf_code][1], 4),
                          # total current value
-                         current_value])
+                         current_value,
+                         ""])
                 else:
                     t = day_transactions[mf_code]
                     writer.writerow(
@@ -393,7 +416,8 @@ def WriteToCsv(transactions):
                          t.mf_amount,
                          round(mf_totals[t.mf_code][0], 4),
                          round(mf_totals[t.mf_code][1], 4),
-                         current_value])
+                         current_value,
+                         ""])
 
                 # remove this entry if there are no units left after SELL
                 if abs(mf_totals[mf_code][0]) < 0.001:
@@ -402,9 +426,64 @@ def WriteToCsv(transactions):
             for mf_code in to_be_removed_codes:
                 del(mf_totals[mf_code])
 
+            # Calculate XIRR using mf_transactions, total_value and
+            # got_all_nav_values
+            if got_all_nav_values:
+                all_transactions = mf_transactions.copy()
+                all_transactions.append((curr_date, total_value))
+                xirr_percentage = round(xirr(all_transactions) * 100, 4)
+                #print(all_transactions)
+                #print("XIRR: " + xirr_percentage)
+
+                writer.writerow(
+                    [curr_date.strftime("%Y-%m-%d"),
+                     "", "", "", "", "", "", "", "", xirr_percentage])
+
+
             curr_date = curr_date + datetime.timedelta(days=1)
 
     print("Wrote all transactions")
+
+
+def xirr(transactions):
+    # https://github.com/peliot/XIRR-and-XNPV/blob/master/financial.py
+    # https://sosit.net.au/Formulas.htm#XIRR-How
+    # solve for rate where xnpv comes to 0
+    guess = 0.1
+
+    try:
+        xirr = scipy.optimize.newton( \
+                lambda rate: xnpv(rate, transactions),
+                guess)
+        if xirr.imag == 0:
+            return xirr
+    except (RuntimeError, OverflowError):
+        # do nothing
+        pass
+
+    try:
+        xirr = scipy.optimize.newton( \
+                lambda rate: xnpv(rate, transactions),
+                -guess)
+        if xirr.imag == 0:
+            return xirr
+    except (RuntimeError, OverflowError):
+        return float("NaN")
+
+    return float("NaN")
+
+
+def xnpv(rate, transactions):
+    # date of the first cash flow
+    first_date = min(transactions, key = lambda t: t[0])[0]
+
+    xnpv = 0
+    for (date, amount) in transactions:
+        duration = (date - first_date).days
+        xnpv += amount / (1 + rate) ** (duration / 365.0)
+
+    #print("Rate: " + str(rate) + " XNPV: " + str(xnpv))
+    return xnpv
 
 
 def main():

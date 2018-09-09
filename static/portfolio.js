@@ -38,6 +38,17 @@ $(function() {
             display: true,
             labelString: "Value"
           }
+        }, {
+          id: "XIRR",
+          position: "right",
+          type: "linear",
+          ticks: {
+            suggestedMin: 0,
+          },
+          scaleLabel: {
+            display: true,
+            labelString: "XIRR"
+          }
         }]
       }
     }
@@ -70,8 +81,10 @@ function readCsv(csvData) {
   // remove last empty element
   csvLines.splice(-1);
   // date vs (dict of mfCode vs csv data)
-  var csvValues = {};
+  var mfValues = {};
   var mfCodes = [];
+  // date vs xirr
+  var xirrValues = {};
   var startDate = moment(); // now
   for (var i = 0; i < csvLines.length; i++) {
     var entries = csvLines[i].split(",");
@@ -84,16 +97,20 @@ function readCsv(csvData) {
         continue;
       }
 
-      // remove second elem which is mfCode
-      var mfCode = parseInt(entries.splice(0, 1), 10);
-      if (!mfCodes.includes(mfCode)) {
-        mfCodes.push(mfCode);
-      }
+      if (entries[0] == "") {
+        xirrValues[date] = entries[8];
+      } else {
+        // remove second elem which is mfCode
+        var mfCode = parseInt(entries.splice(0, 1), 10);
+        if (!mfCodes.includes(mfCode)) {
+          mfCodes.push(mfCode);
+        }
 
-      if (csvValues[date] === undefined) {
-        csvValues[date] = {};
+        if (mfValues[date] === undefined) {
+          mfValues[date] = {};
+        }
+        mfValues[date][mfCode] = entries;
       }
-      csvValues[date][mfCode] = entries;
 
       // get earliest date
       if (date.isBefore(startDate)) {
@@ -102,19 +119,33 @@ function readCsv(csvData) {
     }
   }
 
-  return [csvValues, startDate, mfCodes];
+  return [mfValues, xirrValues, startDate, mfCodes];
 }
 
 function addChart(portfolioData) {
-  var csvValues = portfolioData[0];
-  var startDate = portfolioData[1];
+  var mfValues = portfolioData[0];
+  var xirrValues = portfolioData[1];
+  var startDate = portfolioData[2];
   var endDate = moment(); // now
 
-  var mfCodes = portfolioData[2];
+  var mfCodes = portfolioData[3];
   console.log("Adding chart for " + mfCodes.length + " MFs");
 
   // list of charts
   var portfolioCharts = [];
+  var xirrChart = {
+    label: "XIRR",
+    data: [],
+    yAxisID: "XIRR",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    borderColor: "rgba(0, 0, 0, 0.5)",
+    borderWidth: 2,
+    //borderDash: [2, 2],
+    fill: false,
+    pointRadius: 0,
+    // tooltip sensitivity
+    pointHitRadius: 5,
+  };
 
   // https://jiffyclub.github.io/palettable/colorbrewer/qualitative/
   chartColors =
@@ -143,7 +174,7 @@ function addChart(portfolioData) {
   // iterate by date
   for (var i = 0; i < portfolioConfig.data.labels.length; i++) {
     var date = moment(portfolioConfig.data.labels[i], "DD MMM YYYY");
-    var allMfVal = csvValues[date];
+    var allMfVal = mfValues[date];
 
     if (allMfVal === undefined) {
       console.log("No data at " + date.format("YYYY-MM-DD"));
@@ -168,8 +199,19 @@ function addChart(portfolioData) {
 
       portfolioCharts[j].data.push(currentValue);
     }
+
+    // cap XIRR at 30%
+    if (xirrValues[date] == undefined) {
+      xirrChart.data.push(null);
+    } else if (xirrValues[date] > 30) {
+      xirrChart.data.push(30);
+    } else {
+      xirrChart.data.push(xirrValues[date]);
+    }
   }
 
+  // push order determines draw Z order
+  portfolioConfig.data.datasets.push(xirrChart);
   for (var k in portfolioCharts) {
     portfolioConfig.data.datasets.push(portfolioCharts[k]);
   }

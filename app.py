@@ -10,12 +10,25 @@ from flask import Flask, render_template
 
 app = Flask(__name__)
 
+
 @app.route('/')
+def default():
+
+    return render_template('mutualfunds.html',
+                           mf_codes = get_mf_name_codes())
+
+
+@app.route('/mutualfunds')
 def index():
 
-    return render_template('index.html',
-                           name = "Abhijeet",
+    return render_template('mutualfunds.html',
                            mf_codes = get_mf_name_codes())
+
+
+@app.route('/portfolio')
+def portfolio():
+
+    return render_template('portfolio.html')
 
 
 def get_mf_name_codes():
