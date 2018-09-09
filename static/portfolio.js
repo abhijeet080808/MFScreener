@@ -54,8 +54,8 @@ $(function() {
     }
   };
 
-  portfolioChart =  new Chart(document.getElementById("canvasPortfolioChart"),
-                              portfolioConfig);
+  portfolioChart = new Chart(document.getElementById("canvasPortfolioChart"),
+                             portfolioConfig);
 
   readCsvFile("/static/csv/transactions.csv")
 })
@@ -186,18 +186,29 @@ function addChart(portfolioData) {
       var mfCode = mfCodes[j];
 
       if (allMfVal[mfCode] === undefined) {
-        portfolioCharts[j].data.push(null);
+        portfolioCharts[j][0].data.push(null);
+        portfolioCharts[j][1].data.push(null);
         continue;
       }
 
       var currentValue = parseFloat(allMfVal[mfCode][6]);
 
       if (currentValue == null || isNaN(currentValue)) {
-        portfolioCharts[j].data.push(null);
-        continue;
+        portfolioCharts[j][0].data.push(null);
+      } else {
+        portfolioCharts[j][0].data.push(currentValue);
       }
 
-      portfolioCharts[j].data.push(currentValue);
+      var currentXirr = parseFloat(allMfVal[mfCode][7]);
+
+      if (currentXirr == null || isNaN(currentXirr)) {
+        portfolioCharts[j][1].data.push(null);
+      } else {
+        if (currentXirr > 30) {
+          currentXirr = 30;
+        }
+        portfolioCharts[j][1].data.push(currentXirr);
+      }
     }
 
     // cap XIRR at 30%
@@ -213,7 +224,8 @@ function addChart(portfolioData) {
   // push order determines draw Z order
   portfolioConfig.data.datasets.push(xirrChart);
   for (var k in portfolioCharts) {
-    portfolioConfig.data.datasets.push(portfolioCharts[k]);
+    portfolioConfig.data.datasets.push(portfolioCharts[k][0]);
+    portfolioConfig.data.datasets.push(portfolioCharts[k][1]);
   }
 
   portfolioChart.update();
@@ -234,7 +246,7 @@ function addLabels(startDate, endDate) {
 function GetPortfolioDataset(mfCode, hexColor) {
 
   var currentValueDataset = {
-    label: mfCode,
+    label: mfCode + " - Value",
     data: [],
     yAxisID: "VAL",
     backgroundColor: getAlphaColor(hexColor, 1),
@@ -250,14 +262,31 @@ function GetPortfolioDataset(mfCode, hexColor) {
     mfColor: hexColor
   }
 
-  return currentValueDataset;
+  var currentXirrDataset = {
+    label: mfCode + " - XIRR",
+    data: [],
+    yAxisID: "XIRR",
+    backgroundColor: getAlphaColor(hexColor, 1),
+    borderColor: getAlphaColor(hexColor, 1),
+    borderWidth: 2,
+    //borderDash: [2, 2],
+    fill: false,
+    pointRadius: 0,
+    // tooltip sensitivity
+    pointHitRadius: 5,
+    // custom data
+    mfCode: mfCode,
+    mfColor: hexColor
+  }
+
+  return [currentValueDataset, currentXirrDataset];
 }
 
 function getChartColor(portfolioCharts) {
   for (var  i = 0; i < chartColors.length; i++) {
     var colorAlreadyUsed = false;
     for (var k in portfolioCharts) {
-      if (chartColors[i] == portfolioCharts[k].mfColor) {
+      if (chartColors[i] == portfolioCharts[k][0].mfColor) {
         colorAlreadyUsed = true;
         break;
       }

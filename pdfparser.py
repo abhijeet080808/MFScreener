@@ -327,8 +327,9 @@ def WriteToCsv(transactions):
         # dict of mf code vs (dict of datetime.datetime vs nav)
         mf_navs = dict()
 
-        # list of (tuple of date and amount) for all transactions per day
-        mf_transactions = list()
+        # dict of mf code vs
+        # (list of (tuple of datetime.datetime and cost) for all transactions)
+        mf_transactions = dict()
 
         curr_date = start_date
         while curr_date <= end_date:
@@ -345,7 +346,9 @@ def WriteToCsv(transactions):
                     if mf_totals.get(t.mf_code) is None:
                         if t.mf_action == "BUY":
                             mf_totals[t.mf_code] = [t.mf_units, t.mf_amount]
-                            total_amount -= t.mf_amount
+                            mf_transactions[t.mf_code] = list();
+                            mf_transactions[t.mf_code].append(( \
+                                curr_date, -t.mf_amount))
                         else:
                             raise ValueError(str(t.mf_code) + " has SELL on " +
                                              str(t.mf_date))
@@ -355,7 +358,8 @@ def WriteToCsv(transactions):
                                 mf_totals[t.mf_code][0] + t.mf_units
                             mf_totals[t.mf_code][1] = \
                                 mf_totals[t.mf_code][1] + t.mf_amount
-                            total_amount -= t.mf_amount
+                            mf_transactions[t.mf_code].append(( \
+                                curr_date, -t.mf_amount))
                         else: # SELL
                             # nav = amount / units
                             combined_buy_nav = \
@@ -366,10 +370,8 @@ def WriteToCsv(transactions):
                                 mf_totals[t.mf_code][0] - t.mf_units
                             mf_totals[t.mf_code][1] = \
                                 mf_totals[t.mf_code][0] * combined_buy_nav
-                            total_amount += t.mf_amount
-
-                # add this day's cummulative transaction
-                mf_transactions.append((curr_date, total_amount))
+                            mf_transactions[t.mf_code].append(( \
+                                curr_date, t.mf_amount))
 
             to_be_removed_codes = list()
 
@@ -393,6 +395,13 @@ def WriteToCsv(transactions):
                 else:
                     got_all_nav_values = False
 
+                # calculate XIRR if possible
+                xirr_percentage = None
+                if current_value is not None:
+                    all_transactions = mf_transactions[mf_code].copy()
+                    all_transactions.append((curr_date, current_value))
+                    xirr_percentage = round(xirr(all_transactions) * 100, 4)
+
                 if day_transactions is None or \
                    day_transactions.get(mf_code) is None:
                     writer.writerow(
@@ -404,7 +413,7 @@ def WriteToCsv(transactions):
                          round(mf_totals[mf_code][1], 4),
                          # total current value
                          current_value,
-                         ""])
+                         xirr_percentage])
                 else:
                     t = day_transactions[mf_code]
                     writer.writerow(
@@ -414,10 +423,13 @@ def WriteToCsv(transactions):
                          t.mf_units,
                          t.mf_nav,
                          t.mf_amount,
+                         # total units
                          round(mf_totals[t.mf_code][0], 4),
+                         # total invested amount
                          round(mf_totals[t.mf_code][1], 4),
+                         # total current value
                          current_value,
-                         ""])
+                         xirr_percentage])
 
                 # remove this entry if there are no units left after SELL
                 if abs(mf_totals[mf_code][0]) < 0.001:
@@ -426,10 +438,11 @@ def WriteToCsv(transactions):
             for mf_code in to_be_removed_codes:
                 del(mf_totals[mf_code])
 
-            # Calculate XIRR using mf_transactions, total_value and
-            # got_all_nav_values
+            # calculate overall XIRR if possible
             if got_all_nav_values:
-                all_transactions = mf_transactions.copy()
+                all_transactions = list()
+                for k in mf_transactions:
+                    all_transactions.extend(mf_transactions[k])
                 all_transactions.append((curr_date, total_value))
                 xirr_percentage = round(xirr(all_transactions) * 100, 4)
                 #print(all_transactions)
