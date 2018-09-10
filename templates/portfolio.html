@@ -24,6 +24,11 @@
     <script src="/static/jquery-ui.js"></script>
     <script src="/static/portfolio.js"></script>
 
+    <script>
+      // safe allows quotes as is without encoding them
+      var mf_name_codes = [ {{ mf_name_codes|join(',\n')|safe }} ];
+    </script>
+
   </head>
 
   <body>
@@ -50,10 +55,41 @@
       <!--Row with one column-->
       <div class="row">
 
+        <div class="row" style="margin: 1em;">
+          <div class="col-md-3">
+            <button class="btn btn-default btn-block"
+              style="outline: 0 none;" onclick="showAllValues()">
+              Show All Values
+            </button>
+          </div>
+          <div class="col-md-3">
+            <button class="btn btn-default btn-block"
+              style="outline: 0 none;" onclick="hideAllValues()">
+              Hide All Values
+            </button>
+          </div>
+          <div class="col-md-3">
+            <button class="btn btn-default btn-block"
+              style="outline: 0 none;" onclick="showAllXirrs()">
+              Show All XIRRs
+            </button>
+          </div>
+          <div class="col-md-3">
+            <button class="btn btn-default btn-block"
+              style="outline: 0 none;" onclick="hideAllXirrs()">
+              Hide All XIRRs
+            </button>
+          </div>
+        </div>
+
         <div id="divChart" class="col-md-12">
 		      <canvas id="canvasPortfolioChart" style="width: 100%; margin-top: 1em"></canvas>
         </div>
 
+      </div>
+
+      <div id="divButtons" class="row" style="margin: 1em;">
+        <!-- MF buttons -->
       </div>
 
       <div class="row">

@@ -318,8 +318,8 @@ function addButton(mfCode, textColor) {
 function getNavLabel(mfCode) {
   if (mfLabelLookup === undefined) {
     mfLabelLookup = {};
-    for (var i = 0; i < mf_codes.length; i++) {
-      mfLabelLookup[mf_codes[i].mfcode] = mf_codes[i].label;
+    for (var i = 0; i < mf_name_codes.length; i++) {
+      mfLabelLookup[mf_name_codes[i].mfcode] = mf_name_codes[i].label;
     }
   }
   return mfLabelLookup[mfCode];
@@ -451,7 +451,7 @@ var chartColors;
 $(function() {
   // https://jqueryui.com/autocomplete/
   $("#inputMfSearch").autocomplete({
-    //source: mf_codes,
+    //source: mf_name_codes,
     //delay: 300,
     //minLength: 2,
     source: function(request, response) {
@@ -461,7 +461,7 @@ $(function() {
       for (var i = 0; i < terms.length; i++) {
         if (terms[i].length > 0) {
           if (results.length == 0) {
-            results = $.ui.autocomplete.filter(mf_codes, terms[i]);
+            results = $.ui.autocomplete.filter(mf_name_codes, terms[i]);
           } else {
             results = $.ui.autocomplete.filter(results, terms[i]);
           }
