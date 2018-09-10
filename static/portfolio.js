@@ -45,7 +45,8 @@ $(function() {
           position: "right",
           type: "linear",
           ticks: {
-            suggestedMin: 0,
+            suggestedMin: -30,
+            suggestedMax: 30,
           },
           scaleLabel: {
             display: true,
