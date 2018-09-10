@@ -244,6 +244,7 @@ function addChart(portfolioData) {
     portfolioConfig.data.datasets.push(portfolioCharts[k][1]);
   }
 
+  hideAllXirrs();
   portfolioChart.update();
 }
 
