@@ -395,6 +395,15 @@ def WriteToCsv(transactions):
                 else:
                     got_all_nav_values = False
 
+                # remove this entry if there are no units left after SELL
+                if abs(mf_totals[mf_code][0]) < 0.001:
+                    to_be_removed_codes.append(mf_code)
+
+                # do not process a day where all NAVs are not available
+                if not got_all_nav_values:
+                    print("Skipped writing transactions for " + str(curr_date))
+                    break
+
                 # calculate XIRR if possible
                 xirr_percentage = None
                 if current_value is not None:
@@ -430,10 +439,6 @@ def WriteToCsv(transactions):
                          # total current value
                          current_value,
                          xirr_percentage])
-
-                # remove this entry if there are no units left after SELL
-                if abs(mf_totals[mf_code][0]) < 0.001:
-                    to_be_removed_codes.append(mf_code)
 
             for mf_code in to_be_removed_codes:
                 del(mf_totals[mf_code])

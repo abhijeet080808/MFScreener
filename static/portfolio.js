@@ -89,12 +89,16 @@ function readCsv(csvData) {
   var csvLines = csvData.split(/\r?\n/);
   // remove last empty element
   csvLines.splice(-1);
-  // date vs (dict of mfCode vs csv data)
+
+  // dict of date vs (dict of mfCode vs csv data)
   var mfValues = {};
   var mfCodes = [];
-  // date vs xirr
+  // dict of date vs xirr
   var xirrValues = {};
+
   var startDate = moment(); // now
+  var endDate = moment(0); // unix epoch time
+
   for (var i = 0; i < csvLines.length; i++) {
     var entries = csvLines[i].split(",");
     if (entries.length > 1) {
@@ -125,20 +129,49 @@ function readCsv(csvData) {
       if (date.isBefore(startDate)) {
         startDate = date;
       }
+
+      if (date.isAfter(endDate)) {
+        endDate = date;
+      }
     }
   }
 
-  return [mfValues, xirrValues, startDate, mfCodes];
+  return [mfValues, xirrValues, startDate, endDate, mfCodes];
 }
 
 function addChart(portfolioData) {
   var mfValues = portfolioData[0];
   var xirrValues = portfolioData[1];
   var startDate = portfolioData[2];
-  var endDate = moment(); // now
+  var endDate = portfolioData[3];
+  var mfCodes = portfolioData[4];
 
-  var mfCodes = portfolioData[3];
+  var i = mfCodes.length;
+  // remove all MFs not being currently held
+  while (i--) {
+    var present_currently = false;
+    for (var j in mfValues[endDate]) {
+      if (mfValues[endDate][mfCodes[i]] !== undefined) {
+        present_currently = true;
+        break;
+      }
+      if (!present_currently) {
+        mfCodes.splice(i, 1);
+      }
+    }
+  }
+
   console.log("Adding chart for " + mfCodes.length + " MFs");
+
+  var totalInvested = 0;
+  var totalValue = 0;
+  for (var i in mfCodes) {
+    totalInvested += parseFloat(mfValues[endDate][mfCodes[i]][5]);
+    totalValue += parseFloat(mfValues[endDate][mfCodes[i]][6]);
+  }
+
+  console.log("Total invested: " + totalInvested +
+              ", Current value: " + totalValue);
 
   // list of charts
   var portfolioCharts = [];
@@ -179,7 +212,11 @@ function addChart(portfolioData) {
     // order is same as mfCodes
     portfolioCharts.push(GetPortfolioDataset(mfCodes[i], hexColor));
 
-    addButton(mfCodes[i], hexColor, i);
+    var invested = mfValues[endDate][mfCodes[i]][5];
+    var value = mfValues[endDate][mfCodes[i]][6];
+    addButton(mfCodes[i], hexColor, i,
+              Math.round(invested/totalInvested*10000)/100,
+              Math.round(value/totalValue*10000)/100);
   }
 
   // iterate by date
@@ -328,7 +365,7 @@ function getAlphaColor(hexColor, alpha) {
   return color;
 }
 
-function addButton(mfCode, textColor, btnNumber) {
+function addButton(mfCode, textColor, btnNumber, investedPerc, valuePerc) {
 
   // even button number
   if (btnNumber % 2 == 0) {
@@ -350,7 +387,7 @@ function addButton(mfCode, textColor, btnNumber) {
     div.appendChild(col2);
   }
 
-  var btn1 = getMfButton(mfCode, textColor);
+  var btn1 = getMfButton(mfCode, textColor, investedPerc, valuePerc);
   var btn2 = getToggleButton(mfCode, "Value" + mfCode, "Value", "VAL");
   var btn3 = getToggleButton(mfCode, "Xirr" + mfCode, "XIRR", "XIRR");
 
@@ -367,7 +404,7 @@ function addButton(mfCode, textColor, btnNumber) {
   }
 }
 
-function getMfButton(mfCode, textColor) {
+function getMfButton(mfCode, textColor, investedPerc, valuePerc) {
   var btn = document.createElement("button");
   var txt = document.createTextNode(mfLabelLookup[mfCode]);
 
@@ -380,11 +417,22 @@ function getMfButton(mfCode, textColor) {
                             "font-weight: bolder !important; " +
                             "color: " + textColor + "; " +
                             "outline: 0 none; " +
-                            "overflow: hidden; text-overflow: ellipsis; ");
+                            "overflow: hidden; text-overflow: ellipsis; " +
+                            "text-align: left; ");
+
+  var lbl = document.createElement("Label");
+  var lbl_txt = document.createTextNode(
+    "Invested Value: " + investedPerc + "% Current Value: " + valuePerc + "%");
+  lbl.appendChild(lbl_txt);
+  lbl.setAttribute("style", "font-weight: normal !important;" +
+                            "color: " + textColor + "; " +
+                            "margin-top: 0.2em; " +
+                            "margin-left: 1em; ");
 
   var div = document.createElement("div");
   div.setAttribute("class", "col-md-8");
   div.appendChild(btn);
+  div.appendChild(lbl);
 
   btn.addEventListener("click", function() {
     // show all charts for this mf code
